@@ -1,0 +1,50 @@
+name: Deploy MusicSharing API to Server
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/deploy_key
+
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        touch ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} > ~/.ssh/temp_known_hosts
+        cat ~/.ssh/temp_known_hosts >> ~/.ssh/known_hosts
+
+    - name: Test SSH connection
+      run: |
+        echo "Testing SSH connection..."
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo Connection successful"
+
+    - name: Deploy to server
+      env:
+        CONNECTION_STRING: ${{ secrets.PROD_CONNECTION_STRING }}
+      run: |
+        echo "Deploying to server..."
+        # First check if ports are in use and free them if needed
+        for port in 5000 5001; do
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "pid=\$(lsof -t -i:$port || true); if [ ! -z \"\$pid\" ]; then echo \"Killing process \$pid using port $port\"; kill -9 \$pid || true; fi"
+        done
+        # Then deploy, passing the connection string as an env variable
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "
+          cd /mnt/user/appdata/musicsharing-api &&
+          git fetch --quiet &&
+          git reset --hard origin/master &&
+          chmod +x ./deploy.sh &&
+          CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' ./deploy.sh"
