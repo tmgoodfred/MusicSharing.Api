@@ -39,7 +39,7 @@ jobs:
       run: |
         echo "Deploying to server..."
         # First check if ports are in use and free them if needed
-        for port in 5000 5001; do
+        for port in 5000; do
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "pid=\$(lsof -t -i:$port || true); if [ ! -z \"\$pid\" ]; then echo \"Killing process \$pid using port $port\"; kill -9 \$pid || true; fi"
         done
         # Then deploy, passing the connection string as an env variable

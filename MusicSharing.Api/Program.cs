@@ -57,6 +57,20 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    var certPath = builder.Configuration["CERT_PATH"];
+    var certPassword = builder.Configuration["CERT_PASSWORD"];
+    if (!string.IsNullOrEmpty(certPath) && !string.IsNullOrEmpty(certPassword))
+    {
+        options.ListenAnyIP(5001, listenOptions =>
+        {
+            listenOptions.UseHttps(certPath, certPassword);
+        });
+        options.ListenAnyIP(5000); // HTTP
+    }
+});
+
 // Services
 builder.Services.AddScoped<IMusicService, MusicService>();
 builder.Services.AddScoped<MusicService>();
