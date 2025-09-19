@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+export CONNECTION_STRING
+export JWT_KEY
+
 echo "Starting deployment process..."
 
 # Configuration
