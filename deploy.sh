@@ -58,6 +58,8 @@ echo "Extra cleanup: Stopping and removing containers publishing port $PORT..."
 docker ps -q --filter "publish=$PORT" | xargs -r docker stop
 docker ps -q --filter "publish=$PORT" | xargs -r docker rm
 
+echo "JWT_KEY is: $JWT_KEY"
+
 echo "Running container on port $PORT..."
 docker run -d \
     --name musicsharing-api-container \

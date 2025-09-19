@@ -32,6 +32,10 @@ jobs:
         echo "Testing SSH connection..."
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo Connection successful"
 
+    - name: Debug JWT_KEY
+      run: |
+        echo "JWT_KEY is ${{ secrets.PROD_JWT_KEY }}"
+
     - name: Deploy to server
       env:
         CONNECTION_STRING: ${{ secrets.PROD_CONNECTION_STRING }}
