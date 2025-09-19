@@ -36,6 +36,8 @@ public class Song
     public List<Comment>? Comments { get; set; }
     public List<Rating>? Ratings { get; set; }
 
+    public int DownloadCount { get; set; } = 0;
+
     public ICollection<Playlist>? Playlists { get; set; }
 
     public int? UserId { get; set; }

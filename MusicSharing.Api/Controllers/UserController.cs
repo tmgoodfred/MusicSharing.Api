@@ -3,15 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services;
+using MusicSharing.Api.Services.Interfaces;
 
 namespace MusicSharing.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController(UserService userService, IConfiguration config) : ControllerBase
+    public class UserController(UserService userService, MusicService musicService, IConfiguration config) : ControllerBase
     {
         private readonly UserService _userService = userService;
         private readonly IConfiguration _config = config;
+        private readonly MusicService _musicService = musicService;
 
         // GET: api/user
         [HttpGet]
@@ -105,6 +107,13 @@ namespace MusicSharing.Api.Controllers
 
             var token = _userService.GenerateJwtToken(user, _config);
             return Ok(new { token });
+        }
+
+        [HttpGet("{id}/analytics")]
+        public async Task<IActionResult> GetUserSongAnalytics(int id)
+        {
+            var analytics = await _musicService.GetUserSongAnalyticsAsync(id);
+            return Ok(analytics);
         }
     }
 }

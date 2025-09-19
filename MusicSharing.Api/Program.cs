@@ -59,6 +59,7 @@ builder.Services.AddAuthentication(options =>
 
 // Services
 builder.Services.AddScoped<IMusicService, MusicService>();
+builder.Services.AddScoped<MusicService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<RatingService>();

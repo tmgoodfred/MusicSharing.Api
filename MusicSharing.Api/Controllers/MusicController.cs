@@ -61,10 +61,13 @@ public class MusicController(IMusicService musicService) : ControllerBase
         var song = await _musicService.GetSongByIdAsync(id);
         if (song == null) return NotFound();
 
+        // Increment play count
+        song.PlayCount++;
+        await _musicService.UpdateSongAsync(song.Id, song);
+
         var stream = await _musicService.StreamSongFileAsync(song.FilePath);
         if (stream == null) return NotFound("Audio file not found.");
 
-        // Return stream with correct MIME type
         return File(stream, "audio/mpeg", enableRangeProcessing: true);
     }
 
@@ -101,11 +104,22 @@ public class MusicController(IMusicService musicService) : ControllerBase
         return PhysicalFile(song.ArtworkPath, mimeType);
     }
 
-    // GET: api/music/search?title=...&artist=...&categoryIds=1,2,3
+    // GET: api/music/search?title=...&artist=...&genre=...&minPlays=...&maxPlays=...&minRating=...&maxRating=...&fromDate=...&toDate=...&tags=tag1,tag2
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] string? title, [FromQuery] string? artist, [FromQuery] List<int>? categoryIds)
+    public async Task<IActionResult> Search(
+        [FromQuery] string? title,
+        [FromQuery] string? artist,
+        [FromQuery] string? genre,
+        [FromQuery] int? minPlays,
+        [FromQuery] int? maxPlays,
+        [FromQuery] double? minRating,
+        [FromQuery] double? maxRating,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        [FromQuery] List<string>? tags,
+        [FromQuery] List<int>? categoryIds)
     {
-        var results = await _musicService.SearchAsync(title, artist, categoryIds);
+        var results = await _musicService.AdvancedSearchAsync(title, artist, genre, minPlays, maxPlays, minRating, maxRating, fromDate, toDate, tags, categoryIds);
         return Ok(results);
     }
 
@@ -120,8 +134,12 @@ public class MusicController(IMusicService musicService) : ControllerBase
         if (!System.IO.File.Exists(song.FilePath))
             return NotFound("Audio file missing on disk.");
 
+        // Increment download count
+        song.DownloadCount++;
+        await _musicService.UpdateSongAsync(song.Id, song);
+
         var fileName = System.IO.Path.GetFileName(song.FilePath);
-        var mimeType = "audio/mpeg"; // Adjust if you support other formats
+        var mimeType = "audio/mpeg";
 
         var stream = new FileStream(song.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return File(stream, mimeType, fileName);

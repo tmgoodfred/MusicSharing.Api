@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MusicSharing.Api.Data;
+using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services.Interfaces;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 
 namespace MusicSharing.Api.Services;
 
@@ -167,6 +168,77 @@ public class MusicService : IMusicService
         var stream = new FileStream(song.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
         var fileName = Path.GetFileName(song.FilePath);
         return (stream, fileName);
+    }
+
+    public async Task<UserSongAnalyticsDto> GetUserSongAnalyticsAsync(int userId)
+    {
+        var songs = await _context.Songs
+            .Where(s => s.UserId == userId)
+            .Include(s => s.Ratings)
+            .ToListAsync();
+
+        var totalSongs = songs.Count;
+        var totalPlays = songs.Sum(s => s.PlayCount);
+        var allRatings = songs.SelectMany(s => s.Ratings ?? []);
+        var averageRating = allRatings.Any() ? allRatings.Average(r => r.RatingValue) : 0.0;
+        var totalDownloads = songs.Sum(s => s.DownloadCount); // If you track downloads
+
+        var mostPopular = songs.OrderByDescending(s => s.PlayCount).FirstOrDefault();
+        var mostRecent = songs.OrderByDescending(s => s.UploadDate).FirstOrDefault();
+
+        return new UserSongAnalyticsDto
+        {
+            UserId = userId,
+            TotalSongs = totalSongs,
+            TotalPlays = totalPlays,
+            AverageRating = averageRating,
+            TotalDownloads = totalDownloads,
+            MostPopularSongTitle = mostPopular?.Title,
+            MostPopularSongId = mostPopular?.Id,
+            MostPopularSongPlays = mostPopular?.PlayCount,
+            MostRecentSongTitle = mostRecent?.Title,
+            MostRecentSongId = mostRecent?.Id,
+            MostRecentUploadDate = mostRecent?.UploadDate
+        };
+    }
+
+    public async Task<List<Song>> AdvancedSearchAsync(
+    string? title, string? artist, string? genre,
+    int? minPlays, int? maxPlays,
+    double? minRating, double? maxRating,
+    DateTime? fromDate, DateTime? toDate,
+    List<string>? tags, List<int>? categoryIds)
+    {
+        var query = _context.Songs
+            .Include(s => s.Categories)
+            .Include(s => s.Ratings)
+            .Include(s => s.Comments)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(title))
+            query = query.Where(s => s.Title.Contains(title));
+        if (!string.IsNullOrEmpty(artist))
+            query = query.Where(s => s.Artist.Contains(artist));
+        if (!string.IsNullOrEmpty(genre))
+            query = query.Where(s => s.Genre == genre);
+        if (minPlays.HasValue)
+            query = query.Where(s => s.PlayCount >= minPlays.Value);
+        if (maxPlays.HasValue)
+            query = query.Where(s => s.PlayCount <= maxPlays.Value);
+        if (fromDate.HasValue)
+            query = query.Where(s => s.UploadDate >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(s => s.UploadDate <= toDate.Value);
+        if (tags != null && tags.Count > 0)
+            query = query.Where(s => s.Tags != null && s.Tags.Any(t => tags.Contains(t)));
+        if (categoryIds != null && categoryIds.Count > 0)
+            query = query.Where(s => s.Categories != null && s.Categories.Any(c => categoryIds.Contains(c.Id)));
+        if (minRating.HasValue)
+            query = query.Where(s => s.Ratings != null && s.Ratings.Any() && s.Ratings.Average(r => r.RatingValue) >= minRating.Value);
+        if (maxRating.HasValue)
+            query = query.Where(s => s.Ratings != null && s.Ratings.Any() && s.Ratings.Average(r => r.RatingValue) <= maxRating.Value);
+
+        return await query.ToListAsync();
     }
 
 }
