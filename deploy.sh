@@ -68,8 +68,8 @@ docker run -d \
     --name musicsharing-api-container \
     -p $PORT:5000 \
     -e ASPNETCORE_URLS="http://+:5000" \
-    -e ASPNETCORE_ConnectionStrings__DefaultConnection="$CONNECTION_STRING" \
-    -e ASPNETCORE_Jwt__Key="$JWT_KEY" \
+    -e ConnectionStrings__DefaultConnection="$CONNECTION_STRING" \
+    -e Jwt__Key="$JWT_KEY" \
     --restart unless-stopped \
     musicsharing-api-image
 
