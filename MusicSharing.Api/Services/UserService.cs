@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MusicSharing.Api.Data;
 using MusicSharing.Api.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace MusicSharing.Api.Services
 {
@@ -13,6 +17,30 @@ namespace MusicSharing.Api.Services
         public UserService(AppDbContext context)
         {
             _context = context;
+        }
+
+        public string GenerateJwtToken(User user, IConfiguration config)
+        {
+            var jwtSettings = config.GetSection("Jwt");
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(12),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public async Task<User> CreateUserAsync(User user)
@@ -81,6 +109,16 @@ namespace MusicSharing.Api.Services
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             return result == PasswordVerificationResult.Success ? user : null;
+        }
+
+        public async Task<User?> UpdateUserProfileAsync(int id, string username, string email)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return null;
+            user.Username = username;
+            user.Email = email;
+            await _context.SaveChangesAsync();
+            return user;
         }
     }
 }

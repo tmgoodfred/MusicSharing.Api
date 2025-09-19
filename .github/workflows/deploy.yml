@@ -35,6 +35,7 @@ jobs:
     - name: Deploy to server
       env:
         CONNECTION_STRING: ${{ secrets.PROD_CONNECTION_STRING }}
+        JWT_KEY: ${{ secrets.PROD_JWT_KEY }}
       run: |
         echo "Deploying to server..."
         # First check if ports are in use and free them if needed
@@ -47,4 +48,4 @@ jobs:
           git fetch --quiet &&
           git reset --hard origin/master &&
           chmod +x ./deploy.sh &&
-          CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' ./deploy.sh"
+          CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' JWT_KEY='${{ secrets.PROD_JWT_KEY }}' ./deploy.sh"

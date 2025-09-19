@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services;
@@ -10,10 +11,12 @@ namespace MusicSharing.Api.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly IConfiguration _config;
 
-        public UserController(UserService userService)
+        public UserController(UserService userService, IConfiguration config)
         {
             _userService = userService;
+            this._config = config;
         }
 
         // GET: api/user
@@ -21,7 +24,15 @@ namespace MusicSharing.Api.Controllers
         public async Task<IActionResult> GetAll()
         {
             var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
+            var dtos = users.Select(u => new UserProfileDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                Role = u.Role.ToString(),
+                CreatedAt = u.CreatedAt
+            }).ToList();
+            return Ok(dtos);
         }
 
         // GET: api/user/{id}
@@ -30,7 +41,15 @@ namespace MusicSharing.Api.Controllers
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
-            return Ok(user);
+            var dto = new UserProfileDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role.ToString(),
+                CreatedAt = user.CreatedAt
+            };
+            return Ok(dto);
         }
 
         // POST: api/user
@@ -45,16 +64,33 @@ namespace MusicSharing.Api.Controllers
                 Role = dto.Role
             };
             var created = await _userService.CreateUserAsync(user);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            var result = new UserProfileDto
+            {
+                Id = created.Id,
+                Username = created.Username,
+                Email = created.Email,
+                Role = created.Role.ToString(),
+                CreatedAt = created.CreatedAt
+            };
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
         }
 
         // PUT: api/user/{id}
+        [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] User user)
+        public async Task<IActionResult> Update(int id, [FromBody] UserProfileDto dto)
         {
-            var updated = await _userService.UpdateUserAsync(id, user);
+            var updated = await _userService.UpdateUserProfileAsync(id, dto.Username, dto.Email);
             if (updated == null) return NotFound();
-            return Ok(updated);
+            var result = new UserProfileDto
+            {
+                Id = updated.Id,
+                Username = updated.Username,
+                Email = updated.Email,
+                Role = updated.Role.ToString(),
+                CreatedAt = updated.CreatedAt
+            };
+            return Ok(result);
         }
 
         // DELETE: api/user/{id}
@@ -73,9 +109,8 @@ namespace MusicSharing.Api.Controllers
             if (user == null)
                 return Unauthorized("Invalid username/email or password.");
 
-            // For now, just return the user (omit PasswordHash in production)
-            user.PasswordHash = ""; // Hide hash
-            return Ok("Success");
+            var token = _userService.GenerateJwtToken(user, _config);
+            return Ok(new { token });
         }
     }
 }
