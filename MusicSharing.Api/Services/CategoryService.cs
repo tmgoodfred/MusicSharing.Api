@@ -4,14 +4,9 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class CategoryService
+public class CategoryService(AppDbContext context)
 {
-    private readonly AppDbContext _context;
-
-    public CategoryService(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly AppDbContext _context = context;
 
     public async Task<List<Category>> GetAllAsync()
     {

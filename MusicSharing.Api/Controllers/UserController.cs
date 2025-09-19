@@ -8,16 +8,10 @@ namespace MusicSharing.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    public class UserController(UserService userService, IConfiguration config) : ControllerBase
     {
-        private readonly UserService _userService;
-        private readonly IConfiguration _config;
-
-        public UserController(UserService userService, IConfiguration config)
-        {
-            _userService = userService;
-            this._config = config;
-        }
+        private readonly UserService _userService = userService;
+        private readonly IConfiguration _config = config;
 
         // GET: api/user
         [HttpGet]

@@ -14,5 +14,7 @@ public interface IMusicService
 
     Task<List<Song>> SearchAsync(string? title = null, string? artist = null, List<int>? categoryIds = null, int? userId = null);
 
+    Task<(Stream? Stream, string? FileName)> DownloadSongFileAsync(int songId);
+
     Task<Stream?> StreamSongFileAsync(string filePath);
 }

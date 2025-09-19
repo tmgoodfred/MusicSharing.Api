@@ -149,13 +149,24 @@ public class MusicService : IMusicService
         if (!string.IsNullOrEmpty(artist))
             query = query.Where(s => s.Artist.Contains(artist));
 
-        if (categoryIds != null && categoryIds.Any())
-            query = query.Where(s => s.Categories.Any(c => categoryIds.Contains(c.Id)));
+        if (categoryIds != null && categoryIds.Count > 0)
+            query = query.Where(s => (s.Categories != null && s.Categories.Count > 0 && s.Categories.Any(c => categoryIds.Contains(c.Id))));
 
         if (userId.HasValue)
             query = query.Where(s => s.UserId == userId.Value);
 
         return await query.ToListAsync();
+    }
+
+    public async Task<(Stream? Stream, string? FileName)> DownloadSongFileAsync(int songId)
+    {
+        var song = await GetSongByIdAsync(songId);
+        if (song == null || string.IsNullOrEmpty(song.FilePath) || !File.Exists(song.FilePath))
+            return (null, null);
+
+        var stream = new FileStream(song.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var fileName = Path.GetFileName(song.FilePath);
+        return (stream, fileName);
     }
 
 }

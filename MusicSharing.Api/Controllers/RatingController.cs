@@ -7,14 +7,9 @@ namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class RatingController : ControllerBase
+public class RatingController(RatingService ratingService) : ControllerBase
 {
-    private readonly RatingService _ratingService;
-
-    public RatingController(RatingService ratingService)
-    {
-        _ratingService = ratingService;
-    }
+    private readonly RatingService _ratingService = ratingService;
 
     // GET: api/rating/song/{songId}
     [HttpGet("song/{songId}")]

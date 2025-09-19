@@ -4,14 +4,9 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class CommentService
+public class CommentService(AppDbContext context)
 {
-    private readonly AppDbContext _context;
-
-    public CommentService(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly AppDbContext _context = context;
 
     public async Task<List<Comment>> GetCommentsBySongAsync(int songId)
     {

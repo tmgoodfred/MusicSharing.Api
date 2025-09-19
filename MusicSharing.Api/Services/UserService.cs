@@ -9,15 +9,10 @@ using System.Text;
 
 namespace MusicSharing.Api.Services
 {
-    public class UserService
+    public class UserService(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext _context = context;
         private readonly PasswordHasher<User> _passwordHasher = new();
-
-        public UserService(AppDbContext context)
-        {
-            _context = context;
-        }
 
         public string GenerateJwtToken(User user, IConfiguration config)
         {

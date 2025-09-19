@@ -7,14 +7,9 @@ namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CommentController : ControllerBase
+public class CommentController(CommentService commentService) : ControllerBase
 {
-    private readonly CommentService _commentService;
-
-    public CommentController(CommentService commentService)
-    {
-        _commentService = commentService;
-    }
+    private readonly CommentService _commentService = commentService;
 
     // GET: api/comment/song/{songId}
     [HttpGet("song/{songId}")]

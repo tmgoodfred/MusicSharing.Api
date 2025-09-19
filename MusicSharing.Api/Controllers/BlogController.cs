@@ -6,14 +6,9 @@ namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BlogController : ControllerBase
+public class BlogController(BlogService blogService) : ControllerBase
 {
-    private readonly BlogService _blogService;
-
-    public BlogController(BlogService blogService)
-    {
-        _blogService = blogService;
-    }
+    private readonly BlogService _blogService = blogService;
 
     // GET: api/blog
     [HttpGet]

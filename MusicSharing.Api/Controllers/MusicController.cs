@@ -2,22 +2,14 @@
 using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services.Interfaces;
-using Swashbuckle.AspNetCore.Annotations;
 
 namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class MusicController : ControllerBase
+public class MusicController(IMusicService musicService) : ControllerBase
 {
-    private readonly IMusicService _musicService;
-    private readonly ILogger<MusicController> _logger;
-
-    public MusicController(IMusicService musicService, ILogger<MusicController> logger)
-    {
-        _musicService = musicService;
-        _logger = logger;
-    }
+    private readonly IMusicService _musicService = musicService;
 
     // GET: api/music
     [HttpGet]
@@ -115,6 +107,24 @@ public class MusicController : ControllerBase
     {
         var results = await _musicService.SearchAsync(title, artist, categoryIds);
         return Ok(results);
+    }
+
+    // GET: api/music/{id}/download
+    [HttpGet("{id}/download")]
+    public async Task<IActionResult> Download(int id)
+    {
+        var song = await _musicService.GetSongByIdAsync(id);
+        if (song == null || string.IsNullOrEmpty(song.FilePath))
+            return NotFound("Song or file not found.");
+
+        if (!System.IO.File.Exists(song.FilePath))
+            return NotFound("Audio file missing on disk.");
+
+        var fileName = System.IO.Path.GetFileName(song.FilePath);
+        var mimeType = "audio/mpeg"; // Adjust if you support other formats
+
+        var stream = new FileStream(song.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return File(stream, mimeType, fileName);
     }
 
 }

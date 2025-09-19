@@ -64,6 +64,9 @@ builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<BlogService>();
 builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<PlaylistService>();
+builder.Services.AddScoped<FollowerService>();
+builder.Services.AddScoped<ActivityService>();
 
 
 var app = builder.Build();

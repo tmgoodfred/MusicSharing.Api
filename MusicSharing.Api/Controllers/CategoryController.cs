@@ -6,14 +6,9 @@ namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CategoryController : ControllerBase
+public class CategoryController(CategoryService categoryService) : ControllerBase
 {
-    private readonly CategoryService _categoryService;
-
-    public CategoryController(CategoryService categoryService)
-    {
-        _categoryService = categoryService;
-    }
+    private readonly CategoryService _categoryService = categoryService;
 
     // GET: api/category
     [HttpGet]
