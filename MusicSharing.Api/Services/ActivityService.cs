@@ -10,13 +10,22 @@ namespace MusicSharing.Api.Services
 
         public async Task<List<Activity>> GetRecentForUserAndFollowingAsync(int userId, int count = 20)
         {
-            // Get IDs of users this user follows (including self)
+            // Get IDs of users this user follows (excluding self)
             var followingIds = await _context.Followers
                 .Where(f => f.FollowerUserId == userId)
                 .Select(f => f.FollowedUserId)
                 .ToListAsync();
 
-            followingIds.Add(userId);
+            if (followingIds.Count == 0)
+            {
+                // No following: return global feed
+                return await _context.Activities
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Take(count)
+                    .ToListAsync();
+            }
+
+            followingIds.Add(userId); // include self
 
             return await _context.Activities
                 .Where(a => followingIds.Contains(a.UserId))
