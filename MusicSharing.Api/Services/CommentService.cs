@@ -24,6 +24,15 @@ public class CommentService
             .ToListAsync();
     }
 
+    public async Task<List<Comment>> GetCommentsByBlogPostAsync(int blogPostId)
+    {
+        return await _context.Comments
+            .Include(c => c.User)
+            .Where(c => c.BlogPostId == blogPostId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<Comment> AddCommentAsync(Comment comment)
     {
         _context.Comments.Add(comment);
@@ -32,11 +41,15 @@ public class CommentService
         // Log activity
         if (comment.UserId.HasValue)
         {
+            string data = comment.SongId.HasValue
+                ? $"{{\"SongId\":{comment.SongId},\"CommentId\":{comment.Id}}}"
+                : $"{{\"BlogPostId\":{comment.BlogPostId},\"CommentId\":{comment.Id}}}";
+
             await _activityService.AddAsync(new Activity
             {
                 UserId = comment.UserId.Value,
                 Type = "Comment",
-                Data = $"{{\"SongId\":{comment.SongId},\"CommentId\":{comment.Id}}}",
+                Data = data,
                 CreatedAt = DateTime.UtcNow
             });
         }

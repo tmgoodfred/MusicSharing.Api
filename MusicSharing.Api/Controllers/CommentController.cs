@@ -19,6 +19,14 @@ public class CommentController(CommentService commentService) : ControllerBase
         return Ok(comments);
     }
 
+    // GET: api/comment/blog/{blogPostId}
+    [HttpGet("blog/{blogPostId}")]
+    public async Task<IActionResult> GetByBlogPost(int blogPostId)
+    {
+        var comments = await _commentService.GetCommentsByBlogPostAsync(blogPostId);
+        return Ok(comments);
+    }
+
     // POST: api/comment
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] CreateCommentDto dto)
@@ -26,13 +34,18 @@ public class CommentController(CommentService commentService) : ControllerBase
         var comment = new Comment
         {
             SongId = dto.SongId,
+            BlogPostId = dto.BlogPostId,
             CommentText = dto.CommentText,
             IsAnonymous = dto.IsAnonymous,
             UserId = dto.UserId,
             CreatedAt = DateTime.UtcNow
         };
         var created = await _commentService.AddCommentAsync(comment);
-        return CreatedAtAction(nameof(GetBySong), new { songId = created.SongId }, created);
+        return CreatedAtAction(
+            comment.SongId.HasValue ? nameof(GetBySong) : nameof(GetByBlogPost),
+            comment.SongId.HasValue ? new { songId = created.SongId } : new { blogPostId = created.BlogPostId },
+            created
+        );
     }
 
     // DELETE: api/comment/{commentId}
