@@ -16,6 +16,6 @@ namespace MusicSharing.Api.DTOs
         [Required]
         public string Artist { get; set; } = null!;
         [Required]
-        public int UserId { get; set; } = 0;
+        public int UserId { get; set; }
     }
 }
