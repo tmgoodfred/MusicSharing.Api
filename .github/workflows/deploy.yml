@@ -1,4 +1,4 @@
-name: Deploy MusicSharing API to Server
+﻿name: Deploy MusicSharing API to Server
 
 on:
   push:
@@ -53,3 +53,17 @@ jobs:
           git reset --hard origin/master &&
           chmod +x ./deploy.sh &&
           CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' JWT_KEY='${{ secrets.PROD_JWT_KEY }}' ./deploy.sh"
+
+    - name: Notify Discord (success)
+      if: success()
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d "{\"content\": \"✅ Deployment succeeded on main!\"}" \
+             ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+    - name: Notify Discord (failure)
+      if: failure()
+      run: |
+        curl -H "Content-Type: application/json" \
+             -d "{\"content\": \"❌ Deployment failed on main!\"}" \
+             ${{ secrets.DISCORD_WEBHOOK_URL }}
