@@ -106,7 +106,7 @@ namespace MusicSharing.Api.Controllers
                 return Unauthorized("Invalid username/email or password.");
 
             var token = _userService.GenerateJwtToken(user, _config);
-            return Ok(new { token });
+            return Ok(new { token, userId = user.Id });
         }
 
         [HttpGet("{id}/analytics")]
