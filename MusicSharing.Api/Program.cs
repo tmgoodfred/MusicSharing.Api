@@ -83,8 +83,19 @@ builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<FollowerService>();
 builder.Services.AddScoped<ActivityService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
+
+app.UseCors("AllowFrontend");
 
 // Middleware
 if (app.Environment.IsDevelopment())

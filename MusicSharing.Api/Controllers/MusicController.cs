@@ -76,8 +76,7 @@ public class MusicController(IMusicService musicService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload([FromForm] SongUploadDto dto)
     {
-        // Get userId from claims (example)
-        int userId = int.Parse(User.FindFirst("sub")!.Value);
+        int userId = dto.UserId;
 
         var song = new Song
         {
