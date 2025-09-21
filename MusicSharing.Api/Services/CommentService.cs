@@ -4,9 +4,16 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class CommentService(AppDbContext context)
+public class CommentService
 {
-    private readonly AppDbContext _context = context;
+    private readonly AppDbContext _context;
+    private readonly ActivityService _activityService;
+
+    public CommentService(AppDbContext context, ActivityService activityService)
+    {
+        _context = context;
+        _activityService = activityService;
+    }
 
     public async Task<List<Comment>> GetCommentsBySongAsync(int songId)
     {
@@ -21,6 +28,19 @@ public class CommentService(AppDbContext context)
     {
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
+
+        // Log activity
+        if (comment.UserId.HasValue)
+        {
+            await _activityService.AddAsync(new Activity
+            {
+                UserId = comment.UserId.Value,
+                Type = "Comment",
+                Data = $"{{\"SongId\":{comment.SongId},\"CommentId\":{comment.Id}}}",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         return comment;
     }
 

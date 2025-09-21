@@ -13,10 +13,13 @@ public class MusicService : IMusicService
     private readonly AppDbContext _context;
     private readonly string _audioFolder;
     private readonly string _artworkFolder;
+    private readonly ActivityService _activityService;
 
-    public MusicService(AppDbContext context, IConfiguration config)
+
+    public MusicService(AppDbContext context, IConfiguration config, ActivityService activityService)
     {
         _context = context;
+        _activityService = activityService;
 
         // Check if running on Linux (Unraid)
         if (OperatingSystem.IsLinux())
@@ -132,6 +135,15 @@ public class MusicService : IMusicService
         // --- Save to Database ---
         _context.Songs.Add(songMetadata);
         await _context.SaveChangesAsync();
+
+        // Log activity
+        await _activityService.AddAsync(new Activity
+        {
+            UserId = userId,
+            Type = "Upload",
+            Data = $"{{\"SongId\":{songMetadata.Id},\"Title\":\"{songMetadata.Title}\"}}",
+            CreatedAt = DateTime.UtcNow
+        });
 
         return songMetadata;
     }
