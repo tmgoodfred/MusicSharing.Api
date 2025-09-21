@@ -44,4 +44,10 @@ public class FollowerService(AppDbContext context)
             .Select(f => f.FollowedUser!)
             .ToListAsync();
     }
+
+    public async Task<bool> IsFollowingAsync(int followerId, int followedId)
+    {
+        return await _context.Followers
+            .AnyAsync(f => f.FollowerUserId == followerId && f.FollowedUserId == followedId);
+    }
 }

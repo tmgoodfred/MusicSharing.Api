@@ -51,4 +51,11 @@ public class FollowerController(FollowerService followerService) : ControllerBas
         }).ToList();
         return Ok(dtos);
     }
+
+    [HttpGet("isFollowing")]
+    public async Task<IActionResult> IsFollowing([FromQuery] int followerId, [FromQuery] int followedId)
+    {
+        var isFollowing = await _followerService.IsFollowingAsync(followerId, followedId);
+        return Ok(isFollowing);
+    }
 }

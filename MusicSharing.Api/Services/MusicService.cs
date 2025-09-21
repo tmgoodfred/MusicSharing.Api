@@ -241,4 +241,14 @@ public class MusicService : IMusicService
         return await query.ToListAsync();
     }
 
+    public async Task<List<Song>> GetUserSongsAsync(int userId)
+    {
+        return await _context.Songs
+            .Where(s => s.UserId == userId)
+            .Include(s => s.Categories)
+            .Include(s => s.Ratings)
+            .Include(s => s.Comments)
+            .ToListAsync();
+    }
+
 }

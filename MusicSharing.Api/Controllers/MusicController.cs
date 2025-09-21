@@ -144,4 +144,11 @@ public class MusicController(IMusicService musicService) : ControllerBase
         return File(stream, mimeType, fileName);
     }
 
+    [HttpGet("user/{userId}/songs")]
+    public async Task<IActionResult> GetUserSongs(int userId)
+    {
+        var songs = await _musicService.GetUserSongsAsync(userId);
+        return Ok(songs);
+    }
+
 }

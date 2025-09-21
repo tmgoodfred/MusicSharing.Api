@@ -9,6 +9,7 @@ public interface IMusicService
     Task<Song> CreateSongAsync(Song song);
     Task<Song?> UpdateSongAsync(int id, Song song);
     Task<bool> DeleteSongAsync(int id);
+    Task<List<Song>> GetUserSongsAsync(int userId);
 
     Task<Song> UploadSongAsync(IFormFile file, Song songMetadata, int userId, IFormFile? artwork);
 
