@@ -10,8 +10,8 @@ The **MusicSharing API** is a RESTful **.NET 8** backend for managing users, son
 
 ## Base URL
 
-- **Production:** `https://your-production-domain/api/`  
-- **Development:** `https://localhost:5001/api/`
+- **Production:** `http://192.168.1.217:5000/api/`  
+- **Development:** `http://192.168.1.217:5000/api/`
 
 ---
 
@@ -185,7 +185,7 @@ GET /api/music/search?title=love&artist=John&genre=Rock&minPlays=10&maxRating=4.
 }
 ```
 
-Other models (Comment, Rating, Category, Follower, Activity, BlogPost) follow similar shapes—see the codebase for full definitions and nullable/private fields.
+Other models (Comment, Rating, Category, Follower, Activity, BlogPost) follow similar shapesâ€”see the codebase for full definitions and nullable/private fields.
 
 ---
 
@@ -349,7 +349,7 @@ Content-Type: application/json
 - **File Uploads:** Use `multipart/form-data` for song uploads.
 - **Authorization:** Use JWT in the `Authorization` header for protected endpoints.
 - **CORS:** Ensure your frontend origin is allowed in backend CORS policy.
-- **Paths shown in examples** (e.g., `/mnt/user/...`) represent server filesystem locations—do not expose internal paths in public documentation if unnecessary.
+- **Paths shown in examples** (e.g., `/mnt/user/...`) represent server filesystem locationsâ€”do not expose internal paths in public documentation if unnecessary.
 
 ---
 
