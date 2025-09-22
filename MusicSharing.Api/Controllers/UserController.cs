@@ -149,5 +149,19 @@ namespace MusicSharing.Api.Controllers
             var analytics = await _musicService.GetUserSongAnalyticsAsync(id);
             return Ok(analytics);
         }
+
+        [HttpPut("{id}/password")]
+        [Consumes("application/json")]
+        public async Task<IActionResult> UpdatePassword(int id, [FromBody] UpdatePasswordDto dto)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null) return NotFound();
+
+            user.PasswordHash = dto.NewPassword; // Will be hashed in the service
+            var updated = await _userService.UpdateUserAsync(id, user);
+            if (updated == null) return NotFound();
+
+            return NoContent();
+        }
     }
 }
