@@ -13,12 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<IISServerOptions>(options =>
 {
-    options.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+    options.MaxRequestBodySize = 150 * 1024 * 1024; // 150 MB
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options.Limits.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+    options.Limits.MaxRequestBodySize = 150 * 1024 * 1024; // 150 MB
 });
 
 builder.Services.AddControllers()

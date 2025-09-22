@@ -71,6 +71,8 @@ docker run -d \
     -e ConnectionStrings__DefaultConnection="$CONNECTION_STRING" \
     -e Jwt__Key="$JWT_KEY" \
     --restart unless-stopped \
+    -v /mnt/user/music-files/artwork:/mnt/user/music-files/artwork \
+    -v /mnt/user/music-files/audio:/mnt/user/music-files/audio \
     musicsharing-api-image
 
 echo "Deployment completed successfully!"
