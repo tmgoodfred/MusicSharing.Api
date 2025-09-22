@@ -65,10 +65,16 @@ public class MusicController(IMusicService musicService) : ControllerBase
         return Ok(updated);
     }
 
-    // DELETE: api/music/{id}
+    // DELETE: api/music/{id}?userId=123
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id, [FromQuery] int userId)
     {
+        var song = await _musicService.GetSongByIdAsync(id);
+        if (song == null) return NotFound();
+
+        if (song.UserId != userId)
+            return Forbid();
+
         var deleted = await _musicService.DeleteSongAsync(id);
         if (!deleted) return NotFound();
         return NoContent();
