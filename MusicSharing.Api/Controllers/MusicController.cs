@@ -101,7 +101,9 @@ public class MusicController(IMusicService musicService) : ControllerBase
         var song = new Song
         {
             Title = dto.Title,
-            Artist = dto.Artist
+            Artist = dto.Artist,
+            Genre = dto.Genre,
+            Tags = dto.Tags
         };
 
         var created = await _musicService.UploadSongAsync(dto.File, song, userId, dto.Artwork);

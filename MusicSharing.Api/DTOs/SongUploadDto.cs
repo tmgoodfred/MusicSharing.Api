@@ -15,7 +15,12 @@ namespace MusicSharing.Api.DTOs
 
         [Required]
         public string Artist { get; set; } = null!;
+
         [Required]
         public int UserId { get; set; }
+
+        public string? Genre { get; set; }
+
+        public List<string>? Tags { get; set; }
     }
 }
