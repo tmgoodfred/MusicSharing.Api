@@ -165,5 +165,19 @@ namespace MusicSharing.Api.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("{id}/profile-picture")]
+        public async Task<IActionResult> GetProfilePicture(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null || string.IsNullOrEmpty(user.ProfilePicturePath))
+                return NotFound("Profile picture not found.");
+
+            if (!System.IO.File.Exists(user.ProfilePicturePath))
+                return NotFound("Profile picture file missing on disk.");
+
+            var mimeType = "image/jpeg"; // Adjust if you support other formats
+            return PhysicalFile(user.ProfilePicturePath, mimeType);
+        }
     }
 }
