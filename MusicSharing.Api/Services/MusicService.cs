@@ -263,4 +263,20 @@ public class MusicService : IMusicService
             .ToListAsync();
     }
 
+    public async Task<string> SaveArtworkAsync(IFormFile artwork)
+    {
+        if (!Directory.Exists(_artworkFolder))
+            Directory.CreateDirectory(_artworkFolder);
+
+        var artworkFileName = $"{Guid.NewGuid()}_{artwork.FileName}";
+        var artworkFilePath = Path.Combine(_artworkFolder, artworkFileName);
+
+        using (var stream = new FileStream(artworkFilePath, FileMode.Create))
+        {
+            await artwork.CopyToAsync(stream);
+        }
+
+        return artworkFilePath;
+    }
+
 }

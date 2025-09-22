@@ -13,6 +13,8 @@ public interface IMusicService
 
     Task<Song> UploadSongAsync(IFormFile file, Song songMetadata, int userId, IFormFile? artwork);
 
+    Task<string> SaveArtworkAsync(IFormFile artwork);
+
     Task<List<Song>> SearchAsync(string? title = null, string? artist = null, List<int>? categoryIds = null, int? userId = null);
 
     Task<(Stream? Stream, string? FileName)> DownloadSongFileAsync(int songId);

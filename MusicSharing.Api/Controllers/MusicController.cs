@@ -36,12 +36,32 @@ public class MusicController(IMusicService musicService) : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
-    // PUT: api/music/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Song song)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Update(
+    int id,
+    [FromForm] string title,
+    [FromForm] string artist,
+    [FromForm] string? genre,
+    [FromForm] string? tags,
+    [FromForm] IFormFile? artwork)
     {
+        var song = await _musicService.GetSongByIdAsync(id);
+        if (song == null) return NotFound();
+
+        song.Title = title;
+        song.Artist = artist;
+        song.Genre = genre;
+        song.Tags = tags?.Split(',').ToList();
+
+        // Handle artwork upload
+        if (artwork != null && artwork.Length > 0)
+        {
+            var updatedArtworkPath = await _musicService.SaveArtworkAsync(artwork);
+            song.ArtworkPath = updatedArtworkPath;
+        }
+
         var updated = await _musicService.UpdateSongAsync(id, song);
-        if (updated == null) return NotFound();
         return Ok(updated);
     }
 
