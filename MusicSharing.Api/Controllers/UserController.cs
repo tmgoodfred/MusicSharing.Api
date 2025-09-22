@@ -26,7 +26,8 @@ namespace MusicSharing.Api.Controllers
                 Username = u.Username,
                 Email = u.Email,
                 Role = u.Role.ToString(),
-                CreatedAt = u.CreatedAt
+                CreatedAt = u.CreatedAt,
+                ProfilePicturePath = u.ProfilePicturePath
             }).ToList();
             return Ok(dtos);
         }
@@ -43,7 +44,8 @@ namespace MusicSharing.Api.Controllers
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
-                CreatedAt = user.CreatedAt
+                CreatedAt = user.CreatedAt,
+                ProfilePicturePath = user.ProfilePicturePath
             };
             return Ok(dto);
         }
