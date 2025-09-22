@@ -193,7 +193,7 @@ public class MusicService : IMusicService
         var totalPlays = songs.Sum(s => s.PlayCount);
         var allRatings = songs.SelectMany(s => s.Ratings ?? []);
         var averageRating = allRatings.Any() ? allRatings.Average(r => r.RatingValue) : 0.0;
-        var totalDownloads = songs.Sum(s => s.DownloadCount); // If you track downloads
+        var totalDownloads = songs.Sum(s => s.DownloadCount);
 
         var mostPopular = songs.OrderByDescending(s => s.PlayCount).FirstOrDefault();
         var mostRecent = songs.OrderByDescending(s => s.UploadDate).FirstOrDefault();
