@@ -105,7 +105,6 @@ namespace MusicSharing.Api.Controllers
 
             if (profilePicture != null && profilePicture.Length > 0)
             {
-                // Set your desired upload folder, e.g., "/mnt/user/music-files/profile-pictures"
                 var uploadFolder = "/mnt/user/music-files/profile-pictures";
                 var path = await _userService.SaveProfilePictureAsync(profilePicture, uploadFolder);
                 user.ProfilePicturePath = path;
