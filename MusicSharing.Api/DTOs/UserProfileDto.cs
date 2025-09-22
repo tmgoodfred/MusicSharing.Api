@@ -7,4 +7,6 @@ public class UserProfileDto
     public string Email { get; set; } = default!;
     public string Role { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
+    public string? ProfilePicturePath { get; set; } // <-- Add this line
+
 }

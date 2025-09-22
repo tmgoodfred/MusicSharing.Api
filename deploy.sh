@@ -73,6 +73,7 @@ docker run -d \
     --restart unless-stopped \
     -v /mnt/user/music-files/artwork:/mnt/user/music-files/artwork \
     -v /mnt/user/music-files/audio:/mnt/user/music-files/audio \
+    -v /mnt/user/music-files/profile-pictures:/mnt/user/music-files/profile-pictures \
     musicsharing-api-image
 
 echo "Deployment completed successfully!"

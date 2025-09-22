@@ -115,5 +115,21 @@ namespace MusicSharing.Api.Services
             await _context.SaveChangesAsync();
             return user;
         }
+
+        public async Task<string> SaveProfilePictureAsync(IFormFile file, string uploadFolder)
+        {
+            if (!Directory.Exists(uploadFolder))
+                Directory.CreateDirectory(uploadFolder);
+
+            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+            var filePath = Path.Combine(uploadFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return filePath;
+        }
     }
 }

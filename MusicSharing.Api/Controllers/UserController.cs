@@ -50,15 +50,30 @@ namespace MusicSharing.Api.Controllers
 
         // POST: api/user
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateUserDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create(
+            [FromForm] string username,
+            [FromForm] string email,
+            [FromForm] string passwordHash,
+            [FromForm] UserRole role,
+            [FromForm] IFormFile? profilePicture)
         {
+            string? profilePicturePath = null;
+            if (profilePicture != null && profilePicture.Length > 0)
+            {
+                var uploadFolder = "/mnt/user/music-files/profile-pictures";
+                profilePicturePath = await _userService.SaveProfilePictureAsync(profilePicture, uploadFolder);
+            }
+
             var user = new User
             {
-                Username = dto.Username,
-                Email = dto.Email,
-                PasswordHash = dto.PasswordHash,
-                Role = dto.Role
+                Username = username,
+                Email = email,
+                PasswordHash = passwordHash,
+                Role = role,
+                ProfilePicturePath = profilePicturePath
             };
+
             var created = await _userService.CreateUserAsync(user);
             var result = new UserProfileDto
             {
@@ -66,7 +81,8 @@ namespace MusicSharing.Api.Controllers
                 Username = created.Username,
                 Email = created.Email,
                 Role = created.Role.ToString(),
-                CreatedAt = created.CreatedAt
+                CreatedAt = created.CreatedAt,
+                ProfilePicturePath = created.ProfilePicturePath
             };
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
         }
@@ -74,17 +90,38 @@ namespace MusicSharing.Api.Controllers
         // PUT: api/user/{id}
         [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UserProfileDto dto)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(
+            int id,
+            [FromForm] string username,
+            [FromForm] string email,
+            [FromForm] IFormFile? profilePicture)
         {
-            var updated = await _userService.UpdateUserProfileAsync(id, dto.Username, dto.Email);
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null) return NotFound();
+
+            user.Username = username;
+            user.Email = email;
+
+            if (profilePicture != null && profilePicture.Length > 0)
+            {
+                // Set your desired upload folder, e.g., "/mnt/user/music-files/profile-pictures"
+                var uploadFolder = "/mnt/user/music-files/profile-pictures";
+                var path = await _userService.SaveProfilePictureAsync(profilePicture, uploadFolder);
+                user.ProfilePicturePath = path;
+            }
+
+            var updated = await _userService.UpdateUserAsync(id, user);
             if (updated == null) return NotFound();
+
             var result = new UserProfileDto
             {
                 Id = updated.Id,
                 Username = updated.Username,
                 Email = updated.Email,
                 Role = updated.Role.ToString(),
-                CreatedAt = updated.CreatedAt
+                CreatedAt = updated.CreatedAt,
+                ProfilePicturePath = updated.ProfilePicturePath
             };
             return Ok(result);
         }

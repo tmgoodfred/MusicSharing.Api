@@ -4,16 +4,10 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class RatingService
+public class RatingService(AppDbContext context, ActivityService activityService)
 {
-    private readonly AppDbContext _context;
-    private readonly ActivityService _activityService;
-
-    public RatingService(AppDbContext context, ActivityService activityService)
-    {
-        _context = context;
-        _activityService = activityService;
-    }
+    private readonly AppDbContext _context = context;
+    private readonly ActivityService _activityService = activityService;
 
     public async Task<List<Rating>> GetRatingsBySongAsync(int songId)
     {

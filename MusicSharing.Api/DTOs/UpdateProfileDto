@@ -1,13 +1,14 @@
-﻿using MusicSharing.Api.Models;
+using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.DTOs
 {
-    public class CreateUserDto
+    public class UserProfileDto
     {
+        public int Id { get; set; }
         public string Username { get; set; } = default!;
         public string Email { get; set; } = default!;
-        public string PasswordHash { get; set; } = default!;
-        public UserRole Role { get; set; } = UserRole.User;
+        public string Role { get; set; } = default!;
+        public DateTime CreatedAt { get; set; }
         public string? ProfilePicturePath { get; set; } // New
     }
 }
