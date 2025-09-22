@@ -87,16 +87,22 @@ namespace MusicSharing.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
         }
 
-        // PUT: api/user/{id}
         [Authorize]
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Update(
-            int id,
-            [FromForm] string username,
-            [FromForm] string email,
-            [FromForm] IFormFile? profilePicture)
+    int id,
+    [FromForm] string username,
+    [FromForm] string email,
+    [FromForm] IFormFile? profilePicture)
         {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null || (int.Parse(userIdClaim) != id && !User.IsInRole("Admin")))
+            {
+                return Forbid();
+            }
+
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
 
