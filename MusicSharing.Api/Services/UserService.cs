@@ -13,16 +13,17 @@ namespace MusicSharing.Api.Services
     {
         private readonly AppDbContext _context = context;
         private readonly PasswordHasher<User> _passwordHasher = new();
-
         public string GenerateJwtToken(User user, IConfiguration config)
         {
             var jwtSettings = config.GetSection("Jwt");
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
-            };
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+        new Claim(ClaimTypes.Name, user.Username),
+        new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+        new Claim(ClaimTypes.Role, user.Role.ToString())
+    };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
