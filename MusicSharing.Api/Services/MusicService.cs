@@ -218,34 +218,41 @@ public class MusicService : IMusicService
     }
 
     public async Task<List<Song>> AdvancedSearchAsync(
-        string? title, string? artist, string? genre,
-        int? minPlays, int? maxPlays,
-        double? minRating, double? maxRating,
-        DateTime? fromDate, DateTime? toDate,
-        List<string>? tags, List<int>? categoryIds,
-        string? uploader // NEW
-    )
+    string? title, string? artist, string? genre,
+    int? minPlays, int? maxPlays,
+    double? minRating, double? maxRating,
+    DateTime? fromDate, DateTime? toDate,
+    List<string>? tags, List<int>? categoryIds,
+    string? uploader
+)
     {
         var query = _context.Songs
             .Include(s => s.Categories)
             .Include(s => s.Ratings)
             .Include(s => s.Comments)
-            .Include(s => s.User) // needed for uploader filtering
+            .Include(s => s.User)
             .AsQueryable();
 
-        if (!string.IsNullOrEmpty(title))
-            query = query.Where(s => s.Title.Contains(title));
+        // Normalize inputs for case-insensitive matching
+        var titleTerm = string.IsNullOrWhiteSpace(title) ? null : title.Trim().ToLower();
+        var artistTerm = string.IsNullOrWhiteSpace(artist) ? null : artist.Trim().ToLower();
+        var genreTerm = string.IsNullOrWhiteSpace(genre) ? null : genre.Trim().ToLower();
+        var uploaderTerm = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim().ToLower();
 
-        if (!string.IsNullOrEmpty(artist))
-            query = query.Where(s => s.Artist != null && s.Artist.Contains(artist));
+        if (titleTerm != null)
+            query = query.Where(s => s.Title.ToLower().Contains(titleTerm));
 
-        if (!string.IsNullOrEmpty(uploader))
+        if (artistTerm != null)
+            query = query.Where(s => s.Artist != null && s.Artist.ToLower().Contains(artistTerm));
+
+        if (uploaderTerm != null)
             query = query.Where(s => s.User != null &&
-                                     (s.User.Username.Contains(uploader) ||
-                                      s.User.Email.Contains(uploader)));
+                                     (s.User.Username.ToLower().Contains(uploaderTerm) ||
+                                      s.User.Email.ToLower().Contains(uploaderTerm)));
 
-        if (!string.IsNullOrEmpty(genre))
-            query = query.Where(s => s.Genre == genre);
+        if (genreTerm != null)
+            query = query.Where(s => s.Genre != null && s.Genre.ToLower().Contains(genreTerm));
+
         if (minPlays.HasValue)
             query = query.Where(s => s.PlayCount >= minPlays.Value);
         if (maxPlays.HasValue)
