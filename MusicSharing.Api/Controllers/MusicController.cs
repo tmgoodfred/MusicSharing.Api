@@ -131,7 +131,7 @@ public class MusicController(IMusicService musicService) : ControllerBase
         return PhysicalFile(song.ArtworkPath, mimeType);
     }
 
-    // GET: api/music/search?title=...&artist=...&genre=...&minPlays=...&maxPlays=...&minRating=...&maxRating=...&fromDate=...&toDate=...&tags=tag1,tag2
+    // GET: api/music/search?title=...&artist=...&uploader=...&genre=...&...
     [HttpGet("search")]
     public async Task<IActionResult> Search(
         [FromQuery] string? title,
@@ -144,9 +144,18 @@ public class MusicController(IMusicService musicService) : ControllerBase
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
         [FromQuery] List<string>? tags,
-        [FromQuery] List<int>? categoryIds)
+        [FromQuery] List<int>? categoryIds,
+        [FromQuery] string? uploader
+    )
     {
-        var results = await _musicService.AdvancedSearchAsync(title, artist, genre, minPlays, maxPlays, minRating, maxRating, fromDate, toDate, tags, categoryIds);
+        var results = await _musicService.AdvancedSearchAsync(
+            title, artist, genre,
+            minPlays, maxPlays,
+            minRating, maxRating,
+            fromDate, toDate,
+            tags, categoryIds,
+            uploader // NEW
+        );
         return Ok(results);
     }
 

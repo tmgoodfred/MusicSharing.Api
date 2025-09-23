@@ -25,7 +25,8 @@ public interface IMusicService
         int? minPlays, int? maxPlays,
         double? minRating, double? maxRating,
         DateTime? fromDate, DateTime? toDate,
-        List<string>? tags, List<int>? categoryIds
-        );
-    
-    }
+        List<string>? tags, List<int>? categoryIds,
+        string? uploader = null
+    );
+
+}

@@ -225,12 +225,22 @@ public class MusicService : IMusicService
             .Include(s => s.Categories)
             .Include(s => s.Ratings)
             .Include(s => s.Comments)
+            .Include(s => s.User) // allow filtering by uploader (User)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(title))
             query = query.Where(s => s.Title.Contains(title));
+
+        // Add user search: match against uploader Username or Email in addition to Song.Artist
         if (!string.IsNullOrEmpty(artist))
-            query = query.Where(s => s.Artist.Contains(artist));
+            query = query.Where(s =>
+                (s.Artist != null && s.Artist.Contains(artist)) ||
+                (s.User != null && (
+                    s.User.Username.Contains(artist) ||
+                    s.User.Email.Contains(artist)
+                ))
+            );
+
         if (!string.IsNullOrEmpty(genre))
             query = query.Where(s => s.Genre == genre);
         if (minPlays.HasValue)
