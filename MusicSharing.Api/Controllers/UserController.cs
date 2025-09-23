@@ -54,26 +54,21 @@ namespace MusicSharing.Api.Controllers
         // POST: api/user
         [HttpPost]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Create(
-            [FromForm] string username,
-            [FromForm] string email,
-            [FromForm] string passwordHash,
-            [FromForm] UserRole role,
-            [FromForm] IFormFile? profilePicture)
+        public async Task<IActionResult> Create([FromForm] CreateUserFormDto form)
         {
             string? profilePicturePath = null;
-            if (profilePicture != null && profilePicture.Length > 0)
+            if (form.ProfilePicture != null && form.ProfilePicture.Length > 0)
             {
                 var uploadFolder = "/mnt/user/music-files/profile-pictures";
-                profilePicturePath = await _userService.SaveProfilePictureAsync(profilePicture, uploadFolder);
+                profilePicturePath = await _userService.SaveProfilePictureAsync(form.ProfilePicture, uploadFolder);
             }
 
             var user = new User
             {
-                Username = username,
-                Email = email,
-                PasswordHash = passwordHash,
-                Role = role,
+                Username = form.Username,
+                Email = form.Email,
+                PasswordHash = form.PasswordHash,
+                Role = form.Role,
                 ProfilePicturePath = profilePicturePath
             };
 
@@ -92,22 +87,18 @@ namespace MusicSharing.Api.Controllers
 
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Update(
-            int id,
-            [FromForm] string username,
-            [FromForm] string email,
-            [FromForm] IFormFile? profilePicture)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateUserFormDto form)
         {
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null) return NotFound();
 
-            user.Username = username;
-            user.Email = email;
+            user.Username = form.Username;
+            user.Email = form.Email;
 
-            if (profilePicture != null && profilePicture.Length > 0)
+            if (form.ProfilePicture != null && form.ProfilePicture.Length > 0)
             {
                 var uploadFolder = "/mnt/user/music-files/profile-pictures";
-                var path = await _userService.SaveProfilePictureAsync(profilePicture, uploadFolder);
+                var path = await _userService.SaveProfilePictureAsync(form.ProfilePicture, uploadFolder);
                 user.ProfilePicturePath = path;
             }
 

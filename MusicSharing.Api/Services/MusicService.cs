@@ -218,13 +218,13 @@ public class MusicService : IMusicService
     }
 
     public async Task<List<Song>> AdvancedSearchAsync(
-        string? title, string? artist, string? genre,
-        int? minPlays, int? maxPlays,
-        double? minRating, double? maxRating,
-        DateTime? fromDate, DateTime? toDate,
-        List<string>? tags, List<int>? categoryIds,
-        string? uploader
-        )
+    string? title, string? artist, string? genre,
+    int? minPlays, int? maxPlays,
+    double? minRating, double? maxRating,
+    DateTime? fromDate, DateTime? toDate,
+    List<string>? tags, List<int>? categoryIds,
+    string? uploader
+)
     {
         var query = _context.Songs
             .Include(s => s.Categories)
@@ -241,20 +241,31 @@ public class MusicService : IMusicService
 
         var searchTags = tags?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
 
-        if (titlePattern != null)
-            query = query.Where(s => EF.Functions.ILike(s.Title, titlePattern));
+        // OR: match any of the text-based filters
+        var hasAnyText =
+            titlePattern != null ||
+            artistPattern != null ||
+            uploaderPattern != null ||
+            genrePattern != null ||
+            (searchTags != null && searchTags.Count > 0);
 
-        if (artistPattern != null)
-            query = query.Where(s => s.Artist != null && EF.Functions.ILike(s.Artist, artistPattern));
+        if (hasAnyText)
+        {
+            query = query.Where(s =>
+                (titlePattern != null && EF.Functions.ILike(s.Title, titlePattern))
+                || (artistPattern != null && s.Artist != null && EF.Functions.ILike(s.Artist, artistPattern))
+                || (uploaderPattern != null && s.User != null &&
+                    (EF.Functions.ILike(s.User.Username, uploaderPattern) ||
+                     EF.Functions.ILike(s.User.Email, uploaderPattern)))
+                || (genrePattern != null && s.Genre != null && EF.Functions.ILike(s.Genre, genrePattern))
+                // Exact tag match (SQL-translatable). If you store tags normalized (e.g., lowercase),
+                // this effectively acts case-insensitive for normalized input.
+                || (searchTags != null && searchTags.Count > 0 &&
+                    s.Tags != null && s.Tags.Any(songTag => searchTags.Contains(songTag)))
+            );
+        }
 
-        if (uploaderPattern != null)
-            query = query.Where(s => s.User != null &&
-                                     (EF.Functions.ILike(s.User.Username, uploaderPattern) ||
-                                      EF.Functions.ILike(s.User.Email, uploaderPattern)));
-
-        if (genrePattern != null)
-            query = query.Where(s => s.Genre != null && EF.Functions.ILike(s.Genre, genrePattern));
-
+        // AND: apply numeric/date/category/rating constraints
         if (fromDate.HasValue)
             query = query.Where(s => s.UploadDate >= fromDate.Value);
         if (toDate.HasValue)
@@ -267,12 +278,6 @@ public class MusicService : IMusicService
 
         if (categoryIds != null && categoryIds.Count > 0)
             query = query.Where(s => s.Categories != null && s.Categories.Any(c => categoryIds.Contains(c.Id)));
-
-        // IMPORTANT: exact tag match only (SQL-translatable); avoids ILike inside Any over text[]
-        if (searchTags != null && searchTags.Count > 0)
-        {
-            query = query.Where(s => s.Tags != null && s.Tags.Any(songTag => searchTags.Contains(songTag)));
-        }
 
         if (minRating.HasValue)
             query = query.Where(s => s.Ratings != null && s.Ratings.Any() &&

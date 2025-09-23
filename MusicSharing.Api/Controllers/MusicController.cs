@@ -39,26 +39,19 @@ public class MusicController(IMusicService musicService) : ControllerBase
 
     [HttpPut("{id}")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Update(
-    int id,
-    [FromForm] string title,
-    [FromForm] string artist,
-    [FromForm] string? genre,
-    [FromForm] string? tags,
-    [FromForm] IFormFile? artwork)
+    public async Task<IActionResult> Update(int id, [FromForm] SongUpdateFormDto form)
     {
         var song = await _musicService.GetSongByIdAsync(id);
         if (song == null) return NotFound();
 
-        song.Title = title;
-        song.Artist = artist;
-        song.Genre = genre;
-        song.Tags = tags?.Split(',').ToList();
+        song.Title = form.Title;
+        song.Artist = form.Artist;
+        song.Genre = form.Genre;
+        song.Tags = form.Tags?.Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
 
-        // Handle artwork upload
-        if (artwork != null && artwork.Length > 0)
+        if (form.Artwork != null && form.Artwork.Length > 0)
         {
-            var updatedArtworkPath = await _musicService.SaveArtworkAsync(artwork);
+            var updatedArtworkPath = await _musicService.SaveArtworkAsync(form.Artwork);
             song.ArtworkPath = updatedArtworkPath;
         }
 
