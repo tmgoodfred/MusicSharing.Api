@@ -27,6 +27,20 @@ public class CommentService(AppDbContext context, ActivityService activityServic
             .ToListAsync();
     }
 
+    public async Task<Comment?> GetCommentBySongAndIdAsync(int songId, int commentId)
+    {
+        return await _context.Comments
+            .Include(c => c.User)
+            .SingleOrDefaultAsync(c => c.SongId == songId && c.Id == commentId);
+    }
+
+    public async Task<Comment?> GetCommentByBlogPostAndIdAsync(int blogPostId, int commentId)
+    {
+        return await _context.Comments
+            .Include(c => c.User)
+            .SingleOrDefaultAsync(c => c.BlogPostId == blogPostId && c.Id == commentId);
+    }
+
     public async Task<Comment> AddCommentAsync(Comment comment)
     {
         _context.Comments.Add(comment);

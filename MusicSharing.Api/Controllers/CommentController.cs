@@ -19,12 +19,30 @@ public class CommentController(CommentService commentService) : ControllerBase
         return Ok(comments);
     }
 
+    // GET: api/comment/song/{songId}/{commentId}
+    [HttpGet("song/{songId}/{commentId}")]
+    public async Task<IActionResult> GetBySongComment(int songId, int commentId)
+    {
+        var comment = await _commentService.GetCommentBySongAndIdAsync(songId, commentId);
+        if (comment is null) return NotFound();
+        return Ok(comment);
+    }
+
     // GET: api/comment/blog/{blogPostId}
     [HttpGet("blog/{blogPostId}")]
     public async Task<IActionResult> GetByBlogPost(int blogPostId)
     {
         var comments = await _commentService.GetCommentsByBlogPostAsync(blogPostId);
         return Ok(comments);
+    }
+
+    // GET: api/comment/blog/{blogPostId}/{commentId}
+    [HttpGet("blog/{blogPostId}/{commentId}")]
+    public async Task<IActionResult> GetByBlogPostComment(int blogPostId, int commentId)
+    {
+        var comment = await _commentService.GetCommentByBlogPostAndIdAsync(blogPostId, commentId);
+        if (comment is null) return NotFound();
+        return Ok(comment);
     }
 
     // POST: api/comment
