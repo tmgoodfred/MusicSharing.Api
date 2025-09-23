@@ -219,27 +219,27 @@ public class MusicService : IMusicService
     int? minPlays, int? maxPlays,
     double? minRating, double? maxRating,
     DateTime? fromDate, DateTime? toDate,
-    List<string>? tags, List<int>? categoryIds)
+    List<string>? tags, List<int>? categoryIds,
+    string? uploader // NEW
+)
     {
         var query = _context.Songs
             .Include(s => s.Categories)
             .Include(s => s.Ratings)
             .Include(s => s.Comments)
-            .Include(s => s.User) // allow filtering by uploader (User)
+            .Include(s => s.User) // needed for uploader filtering
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(title))
             query = query.Where(s => s.Title.Contains(title));
 
-        // Add user search: match against uploader Username or Email in addition to Song.Artist
         if (!string.IsNullOrEmpty(artist))
-            query = query.Where(s =>
-                (s.Artist != null && s.Artist.Contains(artist)) ||
-                (s.User != null && (
-                    s.User.Username.Contains(artist) ||
-                    s.User.Email.Contains(artist)
-                ))
-            );
+            query = query.Where(s => s.Artist != null && s.Artist.Contains(artist));
+
+        if (!string.IsNullOrEmpty(uploader))
+            query = query.Where(s => s.User != null &&
+                                     (s.User.Username.Contains(uploader) ||
+                                      s.User.Email.Contains(uploader)));
 
         if (!string.IsNullOrEmpty(genre))
             query = query.Where(s => s.Genre == genre);
