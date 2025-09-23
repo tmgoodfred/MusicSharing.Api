@@ -184,5 +184,26 @@ namespace MusicSharing.Api.Controllers
 
             return PhysicalFile(song.ArtworkPath, mimeType);
         }
+
+        [HttpGet("{id}/profile-picture")]
+        public async Task<IActionResult> GetProfilePicture(int id)
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null || string.IsNullOrEmpty(user.ProfilePicturePath))
+                return NotFound("Profile picture not found.");
+
+            if (!System.IO.File.Exists(user.ProfilePicturePath))
+                return NotFound("Profile picture file missing on disk.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(user.ProfilePicturePath, out var mimeType))
+                mimeType = "application/octet-stream";
+
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
+            return PhysicalFile(user.ProfilePicturePath, mimeType);
+        }
     }
 }
