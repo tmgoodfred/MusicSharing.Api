@@ -167,25 +167,22 @@ namespace MusicSharing.Api.Controllers
             return NoContent();
         }
 
-        [HttpGet("{id}/profile-picture")]
-        public async Task<IActionResult> GetProfilePicture(int id)
+        // GET: api/music/{id}/artwork
+        [HttpGet("{id}/artwork")]
+        public IActionResult GetArtwork(int id)
         {
-            var user = await _userService.GetUserByIdAsync(id);
-            if (user == null || string.IsNullOrEmpty(user.ProfilePicturePath))
-                return NotFound("Profile picture not found.");
+            var song = _musicService.GetSongByIdAsync(id).Result;
+            if (song == null || string.IsNullOrEmpty(song.ArtworkPath))
+                return NotFound("Artwork not found.");
 
-            if (!System.IO.File.Exists(user.ProfilePicturePath))
-                return NotFound("Profile picture file missing on disk.");
+            if (!System.IO.File.Exists(song.ArtworkPath))
+                return NotFound("Artwork file missing on disk.");
 
             var provider = new FileExtensionContentTypeProvider();
-            if (!provider.TryGetContentType(user.ProfilePicturePath, out var mimeType))
+            if (!provider.TryGetContentType(song.ArtworkPath, out var mimeType))
                 mimeType = "application/octet-stream";
 
-            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-            Response.Headers["Pragma"] = "no-cache";
-            Response.Headers["Expires"] = "0";
-
-            return PhysicalFile(user.ProfilePicturePath, mimeType);
+            return PhysicalFile(song.ArtworkPath, mimeType);
         }
     }
 }

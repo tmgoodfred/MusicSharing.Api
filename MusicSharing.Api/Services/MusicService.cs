@@ -240,18 +240,18 @@ public class MusicService : IMusicService
         var uploaderTerm = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim().ToLower();
 
         if (titleTerm != null)
-            query = query.Where(s => s.Title.ToLower().Contains(titleTerm));
+            query = query.Where(s => s.Title.Contains(titleTerm, StringComparison.CurrentCultureIgnoreCase));
 
         if (artistTerm != null)
-            query = query.Where(s => s.Artist != null && s.Artist.ToLower().Contains(artistTerm));
+            query = query.Where(s => s.Artist != null && s.Artist.Contains(artistTerm, StringComparison.CurrentCultureIgnoreCase));
 
         if (uploaderTerm != null)
             query = query.Where(s => s.User != null &&
-                                     (s.User.Username.ToLower().Contains(uploaderTerm) ||
-                                      s.User.Email.ToLower().Contains(uploaderTerm)));
+                                     (s.User.Username.Contains(uploaderTerm, StringComparison.CurrentCultureIgnoreCase) ||
+                                      s.User.Email.Contains(uploaderTerm, StringComparison.CurrentCultureIgnoreCase)));
 
         if (genreTerm != null)
-            query = query.Where(s => s.Genre != null && s.Genre.ToLower().Contains(genreTerm));
+            query = query.Where(s => s.Genre != null && s.Genre.Contains(genreTerm, StringComparison.CurrentCultureIgnoreCase));
 
         if (minPlays.HasValue)
             query = query.Where(s => s.PlayCount >= minPlays.Value);

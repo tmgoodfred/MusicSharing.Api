@@ -3,7 +3,6 @@ using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services;
 using MusicSharing.Api.Services.Interfaces;
-using System.Collections.Generic;
 
 namespace MusicSharing.Api.Controllers;
 
@@ -70,7 +69,7 @@ public class SearchController(UserService userService, IMusicService musicServic
                 minPlays: null, maxPlays: null,
                 minRating: null, maxRating: null,
                 fromDate: null, toDate: null,
-                tags: new List<string> { q }, categoryIds: null,
+                tags: [q], categoryIds: null,
                 uploader: null
             );
 

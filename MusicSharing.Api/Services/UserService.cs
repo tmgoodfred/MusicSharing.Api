@@ -161,7 +161,7 @@ namespace MusicSharing.Api.Services
             var term = query.Trim().ToLower();
 
             return await _context.Users
-                .Where(u => u.Username.ToLower().Contains(term) || u.Email.ToLower().Contains(term))
+                .Where(u => u.Username.Contains(term, StringComparison.CurrentCultureIgnoreCase) || u.Email.Contains(term, StringComparison.CurrentCultureIgnoreCase))
                 .OrderBy(u => u.Username)
                 .Take(take)
                 .ToListAsync();
