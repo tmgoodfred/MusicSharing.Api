@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MusicSharing.Api.DTOs;
+using MusicSharing.Api.Models;
 using MusicSharing.Api.Services;
 using MusicSharing.Api.Services.Interfaces;
+using System.Collections.Generic;
 
 namespace MusicSharing.Api.Controllers;
 
@@ -19,9 +21,13 @@ public class SearchController(UserService userService, IMusicService musicServic
         if (string.IsNullOrWhiteSpace(q))
             return Ok(new GlobalSearchResultDto());
 
-        // Run users + three song searches (title OR artist OR uploader) in parallel
+        take = Math.Clamp(take, 1, 50);
+
+        // Users can be fetched concurrently
         var usersTask = _userService.SearchUsersAsync(q, take);
-        var byTitleTask = _musicService.AdvancedSearchAsync(
+
+        // Songs: run sequentially to avoid DbContext concurrency exceptions
+        var songsByTitle = await _musicService.AdvancedSearchAsync(
             title: q, artist: null, genre: null,
             minPlays: null, maxPlays: null,
             minRating: null, maxRating: null,
@@ -29,7 +35,8 @@ public class SearchController(UserService userService, IMusicService musicServic
             tags: null, categoryIds: null,
             uploader: null
         );
-        var byArtistTask = _musicService.AdvancedSearchAsync(
+
+        var songsByArtist = await _musicService.AdvancedSearchAsync(
             title: null, artist: q, genre: null,
             minPlays: null, maxPlays: null,
             minRating: null, maxRating: null,
@@ -37,7 +44,8 @@ public class SearchController(UserService userService, IMusicService musicServic
             tags: null, categoryIds: null,
             uploader: null
         );
-        var byUploaderTask = _musicService.AdvancedSearchAsync(
+
+        var songsByUploader = await _musicService.AdvancedSearchAsync(
             title: null, artist: null, genre: null,
             minPlays: null, maxPlays: null,
             minRating: null, maxRating: null,
@@ -46,13 +54,14 @@ public class SearchController(UserService userService, IMusicService musicServic
             uploader: q
         );
 
-        await Task.WhenAll(usersTask, byTitleTask, byArtistTask, byUploaderTask);
+        // Deduplicate by Id, then limit
+        var songLookup = new Dictionary<int, Song>();
+        foreach (var s in songsByTitle) songLookup.TryAdd(s.Id, s);
+        foreach (var s in songsByArtist) songLookup.TryAdd(s.Id, s);
+        foreach (var s in songsByUploader) songLookup.TryAdd(s.Id, s);
 
-        var songs = byTitleTask.Result
-            .Concat(byArtistTask.Result)
-            .Concat(byUploaderTask.Result)
-            .GroupBy(s => s.Id)
-            .Select(g => g.First())
+        var songs = songLookup.Values
+            .OrderByDescending(s => s.UploadDate)
             .Take(take)
             .ToList();
 
@@ -77,7 +86,8 @@ public class SearchController(UserService userService, IMusicService musicServic
             }
         }).ToList();
 
-        var userDtos = usersTask.Result.Select(u => new UserProfileDto
+        var users = await usersTask;
+        var userDtos = users.Select(u => new UserProfileDto
         {
             Id = u.Id,
             Username = u.Username,
