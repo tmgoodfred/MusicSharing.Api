@@ -158,8 +158,7 @@ namespace MusicSharing.Api.Services
         public async Task<List<User>> SearchUsersAsync(string query, int take = 20)
         {
             if (string.IsNullOrWhiteSpace(query)) return [];
-            var term = query.Trim();
-            var pattern = $"%{term}%";
+            var pattern = $"%{query.Trim()}%";
 
             return await _context.Users
                 .Where(u =>
