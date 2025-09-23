@@ -138,5 +138,17 @@ namespace MusicSharing.Api.Services
 
             return filePath;
         }
+
+        public async Task<List<User>> SearchUsersAsync(string query, int take = 20)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return [];
+            var term = query.Trim().ToLower();
+
+            return await _context.Users
+                .Where(u => u.Username.ToLower().Contains(term) || u.Email.ToLower().Contains(term))
+                .OrderBy(u => u.Username)
+                .Take(take)
+                .ToListAsync();
+        }
     }
 }
