@@ -158,10 +158,13 @@ namespace MusicSharing.Api.Services
         public async Task<List<User>> SearchUsersAsync(string query, int take = 20)
         {
             if (string.IsNullOrWhiteSpace(query)) return [];
-            var term = query.Trim().ToLower();
+            var term = query.Trim();
+            var pattern = $"%{term}%";
 
             return await _context.Users
-                .Where(u => u.Username.Contains(term, StringComparison.CurrentCultureIgnoreCase) || u.Email.Contains(term, StringComparison.CurrentCultureIgnoreCase))
+                .Where(u =>
+                    EF.Functions.ILike(u.Username, pattern) ||
+                    EF.Functions.ILike(u.Email, pattern))
                 .OrderBy(u => u.Username)
                 .Take(take)
                 .ToListAsync();

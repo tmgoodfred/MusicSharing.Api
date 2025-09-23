@@ -218,13 +218,13 @@ public class MusicService : IMusicService
     }
 
     public async Task<List<Song>> AdvancedSearchAsync(
-    string? title, string? artist, string? genre,
-    int? minPlays, int? maxPlays,
-    double? minRating, double? maxRating,
-    DateTime? fromDate, DateTime? toDate,
-    List<string>? tags, List<int>? categoryIds,
-    string? uploader
-)
+        string? title, string? artist, string? genre,
+        int? minPlays, int? maxPlays,
+        double? minRating, double? maxRating,
+        DateTime? fromDate, DateTime? toDate,
+        List<string>? tags, List<int>? categoryIds,
+        string? uploader
+        )   
     {
         var query = _context.Songs
             .Include(s => s.Categories)
@@ -233,42 +233,55 @@ public class MusicService : IMusicService
             .Include(s => s.User)
             .AsQueryable();
 
-        // Normalize inputs for case-insensitive matching
-        var titleTerm = string.IsNullOrWhiteSpace(title) ? null : title.Trim().ToLower();
-        var artistTerm = string.IsNullOrWhiteSpace(artist) ? null : artist.Trim().ToLower();
-        var genreTerm = string.IsNullOrWhiteSpace(genre) ? null : genre.Trim().ToLower();
-        var uploaderTerm = string.IsNullOrWhiteSpace(uploader) ? null : uploader.Trim().ToLower();
+        // Build patterns (case-insensitive via ILike)
+        string? titlePattern = string.IsNullOrWhiteSpace(title) ? null : $"%{title.Trim()}%";
+        string? artistPattern = string.IsNullOrWhiteSpace(artist) ? null : $"%{artist.Trim()}%";
+        string? genrePattern = string.IsNullOrWhiteSpace(genre) ? null : $"%{genre.Trim()}%";
+        string? uploaderPattern = string.IsNullOrWhiteSpace(uploader) ? null : $"%{uploader.Trim()}%";
 
-        if (titleTerm != null)
-            query = query.Where(s => s.Title.Contains(titleTerm, StringComparison.CurrentCultureIgnoreCase));
+        var searchTags = tags?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();
 
-        if (artistTerm != null)
-            query = query.Where(s => s.Artist != null && s.Artist.Contains(artistTerm, StringComparison.CurrentCultureIgnoreCase));
+        if (titlePattern != null)
+            query = query.Where(s => EF.Functions.ILike(s.Title, titlePattern));
 
-        if (uploaderTerm != null)
+        if (artistPattern != null)
+            query = query.Where(s => s.Artist != null && EF.Functions.ILike(s.Artist, artistPattern));
+
+        if (uploaderPattern != null)
             query = query.Where(s => s.User != null &&
-                                     (s.User.Username.Contains(uploaderTerm, StringComparison.CurrentCultureIgnoreCase) ||
-                                      s.User.Email.Contains(uploaderTerm, StringComparison.CurrentCultureIgnoreCase)));
+                                     (EF.Functions.ILike(s.User.Username, uploaderPattern) ||
+                                      EF.Functions.ILike(s.User.Email, uploaderPattern)));
 
-        if (genreTerm != null)
-            query = query.Where(s => s.Genre != null && s.Genre.Contains(genreTerm, StringComparison.CurrentCultureIgnoreCase));
+        if (genrePattern != null)
+            query = query.Where(s => s.Genre != null && EF.Functions.ILike(s.Genre, genrePattern));
+
+        if (fromDate.HasValue)
+            query = query.Where(s => s.UploadDate >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(s => s.UploadDate <= toDate.Value);
 
         if (minPlays.HasValue)
             query = query.Where(s => s.PlayCount >= minPlays.Value);
         if (maxPlays.HasValue)
             query = query.Where(s => s.PlayCount <= maxPlays.Value);
-        if (fromDate.HasValue)
-            query = query.Where(s => s.UploadDate >= fromDate.Value);
-        if (toDate.HasValue)
-            query = query.Where(s => s.UploadDate <= toDate.Value);
-        if (tags != null && tags.Count > 0)
-            query = query.Where(s => s.Tags != null && s.Tags.Any(t => tags.Contains(t)));
+
         if (categoryIds != null && categoryIds.Count > 0)
             query = query.Where(s => s.Categories != null && s.Categories.Any(c => categoryIds.Contains(c.Id)));
+
+        if (searchTags != null && searchTags.Count > 0)
+        {
+            // Match any song tag against any search tag (case-insensitive, partial)
+            query = query.Where(s => s.Tags != null &&
+                                     s.Tags.Any(songTag =>
+                                         searchTags.Any(st => EF.Functions.ILike(songTag, $"%{st}%"))));
+        }
+
         if (minRating.HasValue)
-            query = query.Where(s => s.Ratings != null && s.Ratings.Any() && s.Ratings.Average(r => r.RatingValue) >= minRating.Value);
+            query = query.Where(s => s.Ratings != null && s.Ratings.Any() &&
+                                     s.Ratings.Average(r => r.RatingValue) >= minRating.Value);
         if (maxRating.HasValue)
-            query = query.Where(s => s.Ratings != null && s.Ratings.Any() && s.Ratings.Average(r => r.RatingValue) <= maxRating.Value);
+            query = query.Where(s => s.Ratings != null && s.Ratings.Any() &&
+                                     s.Ratings.Average(r => r.RatingValue) <= maxRating.Value);
 
         return await query.ToListAsync();
     }
