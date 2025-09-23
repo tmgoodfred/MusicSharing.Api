@@ -148,15 +148,37 @@ public class MusicController(IMusicService musicService) : ControllerBase
         [FromQuery] string? uploader
     )
     {
-        var results = await _musicService.AdvancedSearchAsync(
+        var songs = await _musicService.AdvancedSearchAsync(
             title, artist, genre,
             minPlays, maxPlays,
             minRating, maxRating,
             fromDate, toDate,
             tags, categoryIds,
-            uploader // NEW
+            uploader
         );
-        return Ok(results);
+
+        var result = songs.Select(s => new SongSearchResultDto
+        {
+            Id = s.Id,
+            Title = s.Title,
+            Artist = s.Artist,
+            Genre = s.Genre,
+            Tags = s.Tags,
+            UploadDate = s.UploadDate,
+            PlayCount = s.PlayCount,
+            DownloadCount = s.DownloadCount,
+            Uploader = s.User == null ? null : new UserProfileDto
+            {
+                Id = s.User.Id,
+                Username = s.User.Username,
+                Email = s.User.Email,
+                Role = s.User.Role.ToString(),
+                CreatedAt = s.User.CreatedAt,
+                ProfilePicturePath = s.User.ProfilePicturePath
+            }
+        }).ToList();
+
+        return Ok(result);
     }
 
     // GET: api/music/{id}/download
