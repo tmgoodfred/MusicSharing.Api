@@ -7,9 +7,10 @@ namespace MusicSharing.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CommentController(CommentService commentService) : ControllerBase
+public class CommentController(CommentService commentService, ActivityService activityService) : ControllerBase
 {
     private readonly CommentService _commentService = commentService;
+    private readonly ActivityService _activityService = activityService;
 
     // GET: api/comment/song/{songId}
     [HttpGet("song/{songId}")]
@@ -72,6 +73,10 @@ public class CommentController(CommentService commentService) : ControllerBase
     {
         var deleted = await _commentService.DeleteCommentAsync(commentId, userId, isAdmin);
         if (!deleted) return Forbid();
+
+        // Purge activity entries for this comment
+        await _activityService.DeleteByCommentAsync(commentId);
+
         return NoContent();
     }
 }

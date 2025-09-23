@@ -82,6 +82,9 @@ public class MusicService : IMusicService
         var song = await _context.Songs.FindAsync(id);
         if (song == null) return false;
 
+        // Delete related activity entries (e.g., uploads, interactions referencing this song)
+        await _activityService.DeleteBySongAsync(id);
+
         _context.Songs.Remove(song);
         await _context.SaveChangesAsync();
         return true;
@@ -215,13 +218,13 @@ public class MusicService : IMusicService
     }
 
     public async Task<List<Song>> AdvancedSearchAsync(
-    string? title, string? artist, string? genre,
-    int? minPlays, int? maxPlays,
-    double? minRating, double? maxRating,
-    DateTime? fromDate, DateTime? toDate,
-    List<string>? tags, List<int>? categoryIds,
-    string? uploader // NEW
-)
+        string? title, string? artist, string? genre,
+        int? minPlays, int? maxPlays,
+        double? minRating, double? maxRating,
+        DateTime? fromDate, DateTime? toDate,
+        List<string>? tags, List<int>? categoryIds,
+        string? uploader // NEW
+    )
     {
         var query = _context.Songs
             .Include(s => s.Categories)
@@ -288,5 +291,4 @@ public class MusicService : IMusicService
 
         return artworkFilePath;
     }
-
 }

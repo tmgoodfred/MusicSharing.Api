@@ -4,9 +4,10 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class BlogService(AppDbContext context)
+public class BlogService(AppDbContext context, ActivityService activityService)
 {
     private readonly AppDbContext _context = context;
+    private readonly ActivityService _activityService = activityService;
 
     public async Task<List<BlogPost>> GetAllAsync()
     {
@@ -47,6 +48,9 @@ public class BlogService(AppDbContext context)
     {
         var post = await _context.BlogPosts.FindAsync(id);
         if (post == null) return false;
+
+        // Delete related activity entries (e.g., post created or commented on)
+        await _activityService.DeleteByBlogPostAsync(id);
 
         _context.BlogPosts.Remove(post);
         await _context.SaveChangesAsync();

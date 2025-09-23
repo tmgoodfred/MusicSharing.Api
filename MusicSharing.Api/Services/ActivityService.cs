@@ -49,5 +49,38 @@ namespace MusicSharing.Api.Services
             await _context.SaveChangesAsync();
             return activity;
         }
+
+        // --- New helpers for cleanup ---
+
+        public async Task<int> DeleteByUserAsync(int userId)
+        {
+            return await _context.Activities
+                .Where(a => a.UserId == userId)
+                .ExecuteDeleteAsync();
+        }
+
+        public async Task<int> DeleteBySongAsync(int songId)
+        {
+            // Match JSON payloads that contain "SongId":<id>
+            return await _context.Activities
+                .Where(a => a.Data != null && a.Data.Contains($"\"SongId\":{songId}"))
+                .ExecuteDeleteAsync();
+        }
+
+        public async Task<int> DeleteByCommentAsync(int commentId)
+        {
+            // Match JSON payloads that contain "CommentId":<id>
+            return await _context.Activities
+                .Where(a => a.Data != null && a.Data.Contains($"\"CommentId\":{commentId}"))
+                .ExecuteDeleteAsync();
+        }
+
+        public async Task<int> DeleteByBlogPostAsync(int blogPostId)
+        {
+            // Match JSON payloads that contain "BlogPostId":<id>
+            return await _context.Activities
+                .Where(a => a.Data != null && a.Data.Contains($"\"BlogPostId\":{blogPostId}"))
+                .ExecuteDeleteAsync();
+        }
     }
 }

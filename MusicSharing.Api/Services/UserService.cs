@@ -9,21 +9,23 @@ using System.Text;
 
 namespace MusicSharing.Api.Services
 {
-    public class UserService(AppDbContext context)
+    public class UserService(AppDbContext context, ActivityService activityService)
     {
         private readonly AppDbContext _context = context;
+        private readonly ActivityService _activityService = activityService;
         private readonly PasswordHasher<User> _passwordHasher = new();
+
         public string GenerateJwtToken(User user, IConfiguration config)
         {
             var jwtSettings = config.GetSection("Jwt");
             var claims = new[]
             {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Name, user.Username),
-        new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-        new Claim(ClaimTypes.Role, user.Role.ToString())
-    };
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -73,6 +75,9 @@ namespace MusicSharing.Api.Services
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;
 
+            // Delete all activity created by this user
+            await _activityService.DeleteByUserAsync(id);
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
@@ -94,6 +99,7 @@ namespace MusicSharing.Api.Services
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             return result == PasswordVerificationResult.Success;
         }
+
         public async Task<User?> AuthenticateAsync(string usernameOrEmail, string password)
         {
             var user = await _context.Users
