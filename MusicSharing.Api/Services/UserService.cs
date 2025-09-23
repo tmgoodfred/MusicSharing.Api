@@ -58,6 +58,12 @@ namespace MusicSharing.Api.Services
             user.Username = updatedUser.Username;
             user.Email = updatedUser.Email;
 
+            // Persist profile picture path changes
+            if (user.ProfilePicturePath != updatedUser.ProfilePicturePath)
+            {
+                user.ProfilePicturePath = updatedUser.ProfilePicturePath;
+            }
+
             // Only hash and update password if it was changed
             if (!string.IsNullOrWhiteSpace(updatedUser.PasswordHash))
             {
