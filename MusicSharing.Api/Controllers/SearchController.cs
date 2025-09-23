@@ -24,88 +24,47 @@ public class SearchController(UserService userService, IMusicService musicServic
         {
             take = Math.Clamp(take, 1, 50);
 
-            // Run all DB calls sequentially to avoid DbContext concurrency exceptions
+            // Users first
             var users = await _userService.SearchUsersAsync(q, take);
 
-            var songsByTitle = await _musicService.AdvancedSearchAsync(
-                title: q, artist: null, genre: null,
+            // One consolidated song search (title OR artist OR uploader OR genre OR tags)
+            var songs = await _musicService.AdvancedSearchAsync(
+                title: q,
+                artist: q,
+                genre: q,
                 minPlays: null, maxPlays: null,
                 minRating: null, maxRating: null,
                 fromDate: null, toDate: null,
-                tags: null, categoryIds: null,
-                uploader: null
-            );
-
-            var songsByArtist = await _musicService.AdvancedSearchAsync(
-                title: null, artist: q, genre: null,
-                minPlays: null, maxPlays: null,
-                minRating: null, maxRating: null,
-                fromDate: null, toDate: null,
-                tags: null, categoryIds: null,
-                uploader: null
-            );
-
-            var songsByUploader = await _musicService.AdvancedSearchAsync(
-                title: null, artist: null, genre: null,
-                minPlays: null, maxPlays: null,
-                minRating: null, maxRating: null,
-                fromDate: null, toDate: null,
-                tags: null, categoryIds: null,
+                tags: new List<string> { q },
+                categoryIds: null,
                 uploader: q
             );
 
-            // Also search by genre and tags (OR)
-            var songsByGenre = await _musicService.AdvancedSearchAsync(
-                title: null, artist: null, genre: q,
-                minPlays: null, maxPlays: null,
-                minRating: null, maxRating: null,
-                fromDate: null, toDate: null,
-                tags: null, categoryIds: null,
-                uploader: null
-            );
-
-            var songsByTags = await _musicService.AdvancedSearchAsync(
-                title: null, artist: null, genre: null,
-                minPlays: null, maxPlays: null,
-                minRating: null, maxRating: null,
-                fromDate: null, toDate: null,
-                tags: [q], categoryIds: null,
-                uploader: null
-            );
-
-            // Deduplicate by Id, prefer most recent
-            var songLookup = new Dictionary<int, Song>();
-            foreach (var s in songsByTitle) songLookup.TryAdd(s.Id, s);
-            foreach (var s in songsByArtist) songLookup.TryAdd(s.Id, s);
-            foreach (var s in songsByUploader) songLookup.TryAdd(s.Id, s);
-            foreach (var s in songsByGenre) songLookup.TryAdd(s.Id, s);
-            foreach (var s in songsByTags) songLookup.TryAdd(s.Id, s);
-
-            var songs = songLookup.Values
+            // Limit and map
+            var songDtos = songs
                 .OrderByDescending(s => s.UploadDate)
                 .Take(take)
-                .ToList();
-
-            var songDtos = songs.Select(s => new SongSearchResultDto
-            {
-                Id = s.Id,
-                Title = s.Title,
-                Artist = s.Artist,
-                Genre = s.Genre,
-                Tags = s.Tags,
-                UploadDate = s.UploadDate,
-                PlayCount = s.PlayCount,
-                DownloadCount = s.DownloadCount,
-                Uploader = s.User == null ? null : new UserProfileDto
+                .Select(s => new SongSearchResultDto
                 {
-                    Id = s.User.Id,
-                    Username = s.User.Username,
-                    Email = s.User.Email,
-                    Role = s.User.Role.ToString(),
-                    CreatedAt = s.User.CreatedAt,
-                    ProfilePicturePath = s.User.ProfilePicturePath
-                }
-            }).ToList();
+                    Id = s.Id,
+                    Title = s.Title,
+                    Artist = s.Artist,
+                    Genre = s.Genre,
+                    Tags = s.Tags,
+                    UploadDate = s.UploadDate,
+                    PlayCount = s.PlayCount,
+                    DownloadCount = s.DownloadCount,
+                    Uploader = s.User == null ? null : new UserProfileDto
+                    {
+                        Id = s.User.Id,
+                        Username = s.User.Username,
+                        Email = s.User.Email,
+                        Role = s.User.Role.ToString(),
+                        CreatedAt = s.User.CreatedAt,
+                        ProfilePicturePath = s.User.ProfilePicturePath
+                    }
+                })
+                .ToList();
 
             var userDtos = users.Select(u => new UserProfileDto
             {
@@ -117,15 +76,10 @@ public class SearchController(UserService userService, IMusicService musicServic
                 ProfilePicturePath = u.ProfilePicturePath
             }).ToList();
 
-            return Ok(new GlobalSearchResultDto
-            {
-                Users = userDtos,
-                Songs = songDtos
-            });
+            return Ok(new GlobalSearchResultDto { Users = userDtos, Songs = songDtos });
         }
         catch
         {
-            // Hide internal details from clients
             return Problem("Search failed. Please try again.");
         }
     }
