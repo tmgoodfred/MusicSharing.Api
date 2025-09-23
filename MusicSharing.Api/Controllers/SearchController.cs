@@ -24,10 +24,10 @@ public class SearchController(UserService userService, IMusicService musicServic
         {
             take = Math.Clamp(take, 1, 50);
 
-            // Users first
+            // Users (uses ILike)
             var users = await _userService.SearchUsersAsync(q, take);
 
-            // One consolidated song search (title OR artist OR uploader OR genre OR tags)
+            // One consolidated song search (title OR artist OR uploader OR genre OR tag-exact)
             var songs = await _musicService.AdvancedSearchAsync(
                 title: q,
                 artist: q,
@@ -35,12 +35,11 @@ public class SearchController(UserService userService, IMusicService musicServic
                 minPlays: null, maxPlays: null,
                 minRating: null, maxRating: null,
                 fromDate: null, toDate: null,
-                tags: new List<string> { q },
+                tags: new List<string> { q },  // exact tag match
                 categoryIds: null,
                 uploader: q
             );
 
-            // Limit and map
             var songDtos = songs
                 .OrderByDescending(s => s.UploadDate)
                 .Take(take)

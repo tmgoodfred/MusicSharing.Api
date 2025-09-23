@@ -224,7 +224,7 @@ public class MusicService : IMusicService
         DateTime? fromDate, DateTime? toDate,
         List<string>? tags, List<int>? categoryIds,
         string? uploader
-        )   
+        )
     {
         var query = _context.Songs
             .Include(s => s.Categories)
@@ -268,12 +268,10 @@ public class MusicService : IMusicService
         if (categoryIds != null && categoryIds.Count > 0)
             query = query.Where(s => s.Categories != null && s.Categories.Any(c => categoryIds.Contains(c.Id)));
 
+        // IMPORTANT: exact tag match only (SQL-translatable); avoids ILike inside Any over text[]
         if (searchTags != null && searchTags.Count > 0)
         {
-            // Match any song tag against any search tag (case-insensitive, partial)
-            query = query.Where(s => s.Tags != null &&
-                                     s.Tags.Any(songTag =>
-                                         searchTags.Any(st => EF.Functions.ILike(songTag, $"%{st}%"))));
+            query = query.Where(s => s.Tags != null && s.Tags.Any(songTag => searchTags.Contains(songTag)));
         }
 
         if (minRating.HasValue)
