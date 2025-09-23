@@ -288,7 +288,19 @@ public class MusicService : IMusicService
         if (!Directory.Exists(_artworkFolder))
             Directory.CreateDirectory(_artworkFolder);
 
-        var artworkFileName = $"{Guid.NewGuid()}_{artwork.FileName}";
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".svg", ".ico", ".heic", ".heif", ".avif" };
+
+        var ext = Path.GetExtension(artwork.FileName);
+        var contentType = artwork.ContentType ?? "";
+
+        var looksLikeImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                             || (ext.Length > 0 && allowedExtensions.Contains(ext));
+
+        if (!looksLikeImage)
+            throw new InvalidOperationException("Unsupported image type.");
+
+        var artworkFileName = $"{Guid.NewGuid()}{ext}";
         var artworkFilePath = Path.Combine(_artworkFolder, artworkFileName);
 
         using (var stream = new FileStream(artworkFilePath, FileMode.Create))

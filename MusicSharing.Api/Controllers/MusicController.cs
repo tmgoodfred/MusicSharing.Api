@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services.Interfaces;
@@ -127,7 +128,10 @@ public class MusicController(IMusicService musicService) : ControllerBase
         if (!System.IO.File.Exists(song.ArtworkPath))
             return NotFound("Artwork file missing on disk.");
 
-        var mimeType = "image/jpeg"; // adjust if needed
+        var provider = new FileExtensionContentTypeProvider();
+        if (!provider.TryGetContentType(song.ArtworkPath, out var mimeType))
+            mimeType = "application/octet-stream";
+
         return PhysicalFile(song.ArtworkPath, mimeType);
     }
 

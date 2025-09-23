@@ -59,10 +59,7 @@ namespace MusicSharing.Api.Services
             user.Email = updatedUser.Email;
 
             // Persist profile picture path changes
-            if (user.ProfilePicturePath != updatedUser.ProfilePicturePath)
-            {
-                user.ProfilePicturePath = updatedUser.ProfilePicturePath;
-            }
+            user.ProfilePicturePath = updatedUser.ProfilePicturePath;
 
             // Only hash and update password if it was changed
             if (!string.IsNullOrWhiteSpace(updatedUser.PasswordHash))
@@ -134,7 +131,20 @@ namespace MusicSharing.Api.Services
             if (!Directory.Exists(uploadFolder))
                 Directory.CreateDirectory(uploadFolder);
 
-            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+            // Accept common image types
+            var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".svg", ".ico", ".heic", ".heif", ".avif" };
+
+            var ext = Path.GetExtension(file.FileName);
+            var contentType = file.ContentType ?? "";
+
+            var looksLikeImage = contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                                 || (ext.Length > 0 && allowedExtensions.Contains(ext));
+
+            if (!looksLikeImage)
+                throw new InvalidOperationException("Unsupported image type.");
+
+            var fileName = $"{Guid.NewGuid()}{ext}";
             var filePath = Path.Combine(uploadFolder, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
