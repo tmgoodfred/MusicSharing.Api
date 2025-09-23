@@ -17,6 +17,5 @@ public class User
     public UserRole Role { get; set; } = UserRole.User;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // New property
     public string? ProfilePicturePath { get; set; }
 }
