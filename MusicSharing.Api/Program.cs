@@ -100,38 +100,59 @@ builder.Services.AddScoped<FollowerService>();
 builder.Services.AddScoped<ActivityService>();
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 
+var allowedOrigins = new[]
+{
+    "https://music-sharing.online",
+    "https://www.music-sharing.online",
+    "https://api.music-sharing.online",
+    "http://localhost:4200",
+    "https://localhost:4200"
+};
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .SetIsOriginAllowedToAllowWildcardSubdomains()
+              // Uncomment only if you actually use cookies or need credentials:
+              //.AllowCredentials()
+              ;
     });
 });
 
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");
-
-// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    app.UseSwagger(c =>
-    {
-        c.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi2_0;
-    });
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MusicSharing API v1");
-    });
+    app.UseSwagger(c => c.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi2_0);
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MusicSharing API v1"));
 }
 
 app.UseHttpsRedirection();
+
 app.UseRouting();
+
 app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
+// (Optional) explicit 204 for stray preflight paths not mapped:
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Method == HttpMethods.Options &&
+        ctx.Response.StatusCode == StatusCodes.Status404NotFound)
+    {
+        ctx.Response.StatusCode = StatusCodes.Status204NoContent;
+        return;
+    }
+    await next();
+});
+
 app.Run();
