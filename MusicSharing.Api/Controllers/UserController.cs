@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.StaticFiles;
 using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 using MusicSharing.Api.Services;
-using MusicSharing.Api.Services.Interfaces;
 
 namespace MusicSharing.Api.Controllers
 {
@@ -28,7 +27,8 @@ namespace MusicSharing.Api.Controllers
                 Email = u.Email,
                 Role = u.Role.ToString(),
                 CreatedAt = u.CreatedAt,
-                ProfilePicturePath = u.ProfilePicturePath
+                ProfilePicturePath = u.ProfilePicturePath,
+                EmailConfirmed = u.EmailConfirmed
             }).ToList();
             return Ok(dtos);
         }
@@ -46,7 +46,8 @@ namespace MusicSharing.Api.Controllers
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt,
-                ProfilePicturePath = user.ProfilePicturePath
+                ProfilePicturePath = user.ProfilePicturePath,
+                EmailConfirmed = user.EmailConfirmed
             };
             return Ok(dto);
         }
@@ -73,6 +74,12 @@ namespace MusicSharing.Api.Controllers
             };
 
             var created = await _userService.CreateUserAsync(user);
+            var token = await _userService.CreateEmailVerificationTokenAsync(created.Id, HttpContext.Connection.RemoteIpAddress?.ToString());
+            if (token != null)
+            {
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                await _userService.SendVerificationEmailAsync(created.Id, baseUrl, token);
+            }
             var result = new UserProfileDto
             {
                 Id = created.Id,
@@ -80,7 +87,8 @@ namespace MusicSharing.Api.Controllers
                 Email = created.Email,
                 Role = created.Role.ToString(),
                 CreatedAt = created.CreatedAt,
-                ProfilePicturePath = created.ProfilePicturePath
+                ProfilePicturePath = created.ProfilePicturePath,
+                EmailConfirmed = created.EmailConfirmed
             };
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
         }
@@ -112,7 +120,8 @@ namespace MusicSharing.Api.Controllers
                 Email = updated.Email,
                 Role = updated.Role.ToString(),
                 CreatedAt = updated.CreatedAt,
-                ProfilePicturePath = updated.ProfilePicturePath
+                ProfilePicturePath = updated.ProfilePicturePath,
+                EmailConfirmed = updated.EmailConfirmed
             };
             return Ok(result);
         }
@@ -132,6 +141,9 @@ namespace MusicSharing.Api.Controllers
             var user = await _userService.AuthenticateAsync(dto.UsernameOrEmail, dto.Password);
             if (user == null)
                 return Unauthorized("Invalid username/email or password.");
+
+            if (!user.EmailConfirmed)
+                return StatusCode(StatusCodes.Status403Forbidden, "Email not verified.");
 
             var token = _userService.GenerateJwtToken(user, _config);
             return Ok(new { token, userId = user.Id });
@@ -195,6 +207,119 @@ namespace MusicSharing.Api.Controllers
             Response.Headers["Expires"] = "0";
 
             return PhysicalFile(user.ProfilePicturePath, mimeType);
+        }
+
+        [HttpPost("request-email-verification")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RequestEmailVerification([FromBody] RequestEmailVerificationDto dto)
+        {
+            // Find user silently
+            var user = (await _userService.SearchUsersAsync(dto.UsernameOrEmail, 1))
+                .FirstOrDefault(u => u.Username == dto.UsernameOrEmail || u.Email == dto.UsernameOrEmail);
+
+            if (user != null && !user.EmailConfirmed)
+            {
+                var token = await _userService.CreateEmailVerificationTokenAsync(user.Id, HttpContext.Connection.RemoteIpAddress?.ToString());
+                if (token != null)
+                {
+                    var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                    await _userService.SendVerificationEmailAsync(user.Id, baseUrl, token);
+                }
+            }
+            // Generic response (avoid enumeration)
+            return Ok(new { message = "If the account requires verification, an email has been sent." });
+        }
+
+        [HttpPost("verify-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
+        {
+            var ok = await _userService.VerifyEmailAsync(dto.Token);
+            if (!ok) return BadRequest("Invalid or expired token.");
+            return NoContent();
+        }
+
+        // GET /verify-email?token=XYZ
+        [HttpGet("/verify-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyEmailViaGet([FromQuery] string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return BadRequest("Missing token.");
+
+            var ok = await _userService.VerifyEmailAsync(token);
+            // Simple inline HTML response (avoid exposing whether token was previously used beyond success/failure).
+            if (!ok)
+            {
+                const string failHtml = """
+            <!DOCTYPE html>
+            <html><head><title>Email Verification</title></head>
+            <body style="font-family:Arial;">
+                <h2>Email Verification</h2>
+                <p>Verification link is invalid or expired.</p>
+            </body></html>
+            """;
+                return new ContentResult { Content = failHtml, ContentType = "text/html", StatusCode = StatusCodes.Status400BadRequest };
+            }
+
+            const string successHtml = """
+        <!DOCTYPE html>
+        <html><head><title>Email Verified</title></head>
+        <body style="font-family:Arial;">
+            <h2>Email Verified</h2>
+            <p>Your email has been successfully verified. You may close this tab and log in.</p>
+        </body></html>
+        """;
+            return new ContentResult { Content = successHtml, ContentType = "text/html" };
+        }
+
+        // POST api/user/forgot-password
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
+        {
+            var raw = await _userService.CreatePasswordResetTokenAsync(
+                dto.UsernameOrEmail,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString());
+
+            if (raw != null)
+            {
+                // Get user (optional) to send email
+                var user = (await _userService.SearchUsersAsync(dto.UsernameOrEmail, 1))
+                    .FirstOrDefault(u => u.Username == dto.UsernameOrEmail || u.Email == dto.UsernameOrEmail);
+                if (user != null)
+                {
+                    var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                    await _userService.SendPasswordResetEmailAsync(user.Id, baseUrl, raw);
+                }
+            }
+
+            return Ok(new { message = "If the account exists and is verified, a reset link has been sent." });
+        }
+
+        // POST api/user/reset-password
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        {
+            var ok = await _userService.ResetPasswordAsync(dto.Token, dto.NewPassword);
+            if (!ok) return BadRequest("Invalid or expired token.");
+            return NoContent();
+        }
+
+        [HttpGet("/reset-password")]
+        [AllowAnonymous]
+        public IActionResult ResetPasswordLanding([FromQuery] string token)
+        {
+            // Just lightweight HTML explaining user should use the frontend app or POST.
+            const string html = """
+            <!DOCTYPE html><html><body style="font-family:Arial;">
+            <h3>Password Reset</h3>
+            <p>If you are seeing this directly, open the main app and paste your token.</p>
+            </body></html>
+            """;
+            return Content(html, "text/html");
         }
     }
 }

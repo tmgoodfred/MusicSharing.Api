@@ -98,6 +98,7 @@ builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<PlaylistService>();
 builder.Services.AddScoped<FollowerService>();
 builder.Services.AddScoped<ActivityService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 
 builder.Services.AddCors(options =>
 {

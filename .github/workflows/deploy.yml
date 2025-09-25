@@ -29,30 +29,38 @@ jobs:
 
     - name: Test SSH connection
       run: |
-        echo "Testing SSH connection..."
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo Connection successful"
-
-    - name: Debug JWT_KEY
-      run: |
-        echo "JWT_KEY is ${{ secrets.PROD_JWT_KEY }}"
 
     - name: Deploy to server
       env:
         CONNECTION_STRING: ${{ secrets.PROD_CONNECTION_STRING }}
         JWT_KEY: ${{ secrets.PROD_JWT_KEY }}
+        SENDGRID_API_KEY: ${{ secrets.PROD_SENDGRID_API_KEY }}
+        SENDGRID_FROM: ${{ secrets.PROD_SENDGRID_FROM }}
+        SENDGRID_ENABLESSL: ${{ secrets.PROD_SENDGRID_ENABLESSL }}
+        SENDGRID_PORT: ${{ secrets.PROD_SENDGRID_PORT }}
       run: |
         echo "Deploying to server..."
-        # First check if ports are in use and free them if needed
+        # Free port locally on remote (optional safety)
         for port in 5000; do
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "pid=\$(lsof -t -i:$port || true); if [ ! -z \"\$pid\" ]; then echo \"Killing process \$pid using port $port\"; kill -9 \$pid || true; fi"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "pid=\$(lsof -t -i:$port || true); if [ ! -z \"\$pid\" ]; then kill -9 \$pid || true; fi"
         done
-        # Then deploy, passing the connection string as an env variable
+        # Run remote deploy with environment variables
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "
           cd /mnt/user/appdata/musicsharing-api &&
           git fetch --quiet &&
           git reset --hard origin/master &&
           chmod +x ./deploy.sh &&
-          CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' JWT_KEY='${{ secrets.PROD_JWT_KEY }}' ./deploy.sh"
+          CONNECTION_STRING='${{ secrets.PROD_CONNECTION_STRING }}' \
+          JWT_KEY='${{ secrets.PROD_JWT_KEY }}' \
+          EMAIL__Smtp__Host='smtp.sendgrid.net' \
+          EMAIL__Smtp__Port='${{ secrets.PROD_SENDGRID_PORT }}' \
+          EMAIL__Smtp__From='${{ secrets.PROD_SENDGRID_FROM }}' \
+          EMAIL__Smtp__User='apikey' \
+          EMAIL__Smtp__Pass='${{ secrets.PROD_SENDGRID_API_KEY }}' \
+          EMAIL__Smtp__EnableSsl='${{ secrets.PROD_SENDGRID_ENABLESSL }}' \
+          ./deploy.sh
+        "
 
     - name: Notify Discord (success)
       if: success()

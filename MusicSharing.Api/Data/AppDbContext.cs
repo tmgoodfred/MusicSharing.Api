@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Playlist> Playlists { get; set; }
     public DbSet<Follower> Followers { get; set; }
     public DbSet<Activity> Activities { get; set; }
+    public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,5 +48,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<EmailVerificationToken>()
+            .HasIndex(t => t.TokenHash)
+            .HasDatabaseName("IX_EmailVerificationTokens_TokenHash");
+
+        modelBuilder.Entity<PasswordResetToken>()
+            .HasIndex(t => t.TokenHash)
+            .HasDatabaseName("IX_PasswordResetTokens_TokenHash");
     }
 }

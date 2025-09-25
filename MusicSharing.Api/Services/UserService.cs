@@ -3,16 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MusicSharing.Api.Data;
 using MusicSharing.Api.Models;
+using MusicSharing.Api.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace MusicSharing.Api.Services
 {
-    public class UserService(AppDbContext context, ActivityService activityService)
+    public partial class UserService(AppDbContext context, ActivityService activityService, IEmailSender emailSender)
     {
         private readonly AppDbContext _context = context;
         private readonly ActivityService _activityService = activityService;
+        private readonly IEmailSender _emailSender = emailSender;
         private readonly PasswordHasher<User> _passwordHasher = new();
 
         public string GenerateJwtToken(User user, IConfiguration config)
@@ -43,7 +45,6 @@ namespace MusicSharing.Api.Services
 
         public async Task<User> CreateUserAsync(User user)
         {
-            // Hash the password before saving
             user.PasswordHash = _passwordHasher.HashPassword(user, user.PasswordHash);
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -57,11 +58,8 @@ namespace MusicSharing.Api.Services
 
             user.Username = updatedUser.Username;
             user.Email = updatedUser.Email;
-
-            // Persist profile picture path changes
             user.ProfilePicturePath = updatedUser.ProfilePicturePath;
 
-            // Only hash and update password if it was changed
             if (!string.IsNullOrWhiteSpace(updatedUser.PasswordHash))
             {
                 user.PasswordHash = _passwordHasher.HashPassword(user, updatedUser.PasswordHash);
@@ -78,7 +76,6 @@ namespace MusicSharing.Api.Services
             var user = await _context.Users.FindAsync(id);
             if (user == null) return false;
 
-            // Delete all activity created by this user
             await _activityService.DeleteByUserAsync(id);
 
             _context.Users.Remove(user);
@@ -86,17 +83,10 @@ namespace MusicSharing.Api.Services
             return true;
         }
 
-        public async Task<User?> GetUserByIdAsync(int id)
-        {
-            return await _context.Users.FindAsync(id);
-        }
+        public async Task<User?> GetUserByIdAsync(int id) => await _context.Users.FindAsync(id);
 
-        public async Task<List<User>> GetAllUsersAsync()
-        {
-            return await _context.Users.ToListAsync();
-        }
+        public async Task<List<User>> GetAllUsersAsync() => await _context.Users.ToListAsync();
 
-        // Add a method to verify passwords
         public bool VerifyPassword(User user, string password)
         {
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
@@ -106,11 +96,9 @@ namespace MusicSharing.Api.Services
         public async Task<User?> AuthenticateAsync(string usernameOrEmail, string password)
         {
             var user = await _context.Users
-                .FirstOrDefaultAsync(u =>
-                    u.Username == usernameOrEmail || u.Email == usernameOrEmail);
+                .FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
 
-            if (user == null)
-                return null;
+            if (user == null) return null;
 
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             return result == PasswordVerificationResult.Success ? user : null;
@@ -131,7 +119,6 @@ namespace MusicSharing.Api.Services
             if (!Directory.Exists(uploadFolder))
                 Directory.CreateDirectory(uploadFolder);
 
-            // Accept common image types
             var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff", ".svg", ".ico", ".heic", ".heif", ".avif" };
 
