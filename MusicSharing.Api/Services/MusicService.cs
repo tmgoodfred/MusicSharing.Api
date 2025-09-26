@@ -77,10 +77,14 @@ public class MusicService : IMusicService
         return existingSong;
     }
 
-    public async Task<bool> DeleteSongAsync(int id)
+    public async Task<bool> DeleteSongAsync(int id, int currentUserId, string currentUserRole)
     {
         var song = await _context.Songs.FindAsync(id);
         if (song == null) return false;
+
+        // Only allow if the user is the owner or an admin
+        if (song.UserId != currentUserId && !string.Equals(currentUserRole, "Admin", StringComparison.OrdinalIgnoreCase))
+            return false;
 
         // Delete related activity entries (e.g., uploads, interactions referencing this song)
         await _activityService.DeleteBySongAsync(id);
