@@ -113,13 +113,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.WithOrigins("https://music-sharing.online") // your frontend domain
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .SetIsOriginAllowedToAllowWildcardSubdomains()
-              // Uncomment only if you actually use cookies or need credentials:
-              //.AllowCredentials()
-              ;
+              .AllowAnyMethod();
     });
 });
 
@@ -132,11 +128,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MusicSharing API v1"));
 }
 
+app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
 
 app.UseRouting();
-
-app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
