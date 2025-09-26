@@ -113,9 +113,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://music-sharing.online") // your frontend domain
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .SetIsOriginAllowedToAllowWildcardSubdomains()
+              // Uncomment only if you actually use cookies or need credentials:
+              //.AllowCredentials()
+              ;
     });
 });
 
