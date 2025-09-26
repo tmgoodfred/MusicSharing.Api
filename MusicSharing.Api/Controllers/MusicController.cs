@@ -66,9 +66,6 @@ public class MusicController(IMusicService musicService) : ControllerBase
         var song = await _musicService.GetSongByIdAsync(id);
         if (song == null) return NotFound();
 
-        if (song.UserId != userId)
-            return Forbid();
-
         var deleted = await _musicService.DeleteSongAsync(id, userId);
         if (!deleted) return NotFound();
         return NoContent();
