@@ -46,6 +46,7 @@ namespace MusicSharing.Api.Services
         public async Task<User> CreateUserAsync(User user)
         {
             user.PasswordHash = _passwordHasher.HashPassword(user, user.PasswordHash);
+            user.CreatedAt = DateTime.UtcNow;
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return user;
