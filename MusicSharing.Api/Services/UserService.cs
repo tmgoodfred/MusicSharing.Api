@@ -45,6 +45,12 @@ namespace MusicSharing.Api.Services
 
         public async Task<User> CreateUserAsync(User user)
         {
+            // Check if email already exists (case-insensitive)
+            var exists = await _context.Users
+                .AnyAsync(u => u.Email.ToLower() == user.Email.ToLower());
+            if (exists)
+                throw new InvalidOperationException("A user with this email already exists.");
+
             user.PasswordHash = _passwordHasher.HashPassword(user, user.PasswordHash);
             user.CreatedAt = DateTime.UtcNow;
             _context.Users.Add(user);

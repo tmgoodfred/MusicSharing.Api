@@ -73,24 +73,32 @@ namespace MusicSharing.Api.Controllers
                 ProfilePicturePath = profilePicturePath
             };
 
-            var created = await _userService.CreateUserAsync(user);
-            var token = await _userService.CreateEmailVerificationTokenAsync(created.Id, HttpContext.Connection.RemoteIpAddress?.ToString());
-            if (token != null)
+            try
             {
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                await _userService.SendVerificationEmailAsync(created.Id, baseUrl, token);
+                var created = await _userService.CreateUserAsync(user);
+                var token = await _userService.CreateEmailVerificationTokenAsync(created.Id, HttpContext.Connection.RemoteIpAddress?.ToString());
+                if (token != null)
+                {
+                    var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                    await _userService.SendVerificationEmailAsync(created.Id, baseUrl, token);
+                }
+                var result = new UserProfileDto
+                {
+                    Id = created.Id,
+                    Username = created.Username,
+                    Email = created.Email,
+                    Role = created.Role.ToString(),
+                    CreatedAt = created.CreatedAt,
+                    ProfilePicturePath = created.ProfilePicturePath,
+                    EmailConfirmed = created.EmailConfirmed
+                };
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
             }
-            var result = new UserProfileDto
+            catch (InvalidOperationException ex)
             {
-                Id = created.Id,
-                Username = created.Username,
-                Email = created.Email,
-                Role = created.Role.ToString(),
-                CreatedAt = created.CreatedAt,
-                ProfilePicturePath = created.ProfilePicturePath,
-                EmailConfirmed = created.EmailConfirmed
-            };
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, result);
+                // Email already exists
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]
