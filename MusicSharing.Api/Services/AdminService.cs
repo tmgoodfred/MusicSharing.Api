@@ -7,9 +7,11 @@ namespace MusicSharing.Api.Services
     public class AdminService
     {
         private readonly AppDbContext _context;
-        public AdminService(AppDbContext context)
+        private readonly ActivityService _activityService;
+        public AdminService(AppDbContext context, ActivityService activityService)
         {
             _context = context;
+            _activityService = activityService;
         }
 
         public async Task<object> GetDashboardAsync()
@@ -33,6 +35,7 @@ namespace MusicSharing.Api.Services
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return false;
+            await _activityService.DeleteByUserAsync(userId);
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
@@ -42,6 +45,7 @@ namespace MusicSharing.Api.Services
         {
             var song = await _context.Songs.FindAsync(songId);
             if (song == null) return false;
+            await _activityService.DeleteBySongAsync(songId);
             _context.Songs.Remove(song);
             await _context.SaveChangesAsync();
             return true;
@@ -51,6 +55,7 @@ namespace MusicSharing.Api.Services
         {
             var comment = await _context.Comments.FindAsync(commentId);
             if (comment == null) return false;
+            await _activityService.DeleteByCommentAsync(commentId);
             _context.Comments.Remove(comment);
             await _context.SaveChangesAsync();
             return true;
@@ -60,6 +65,7 @@ namespace MusicSharing.Api.Services
         {
             var blog = await _context.BlogPosts.FindAsync(blogId);
             if (blog == null) return false;
+            await _activityService.DeleteByBlogPostAsync(blogId);
             _context.BlogPosts.Remove(blog);
             await _context.SaveChangesAsync();
             return true;
