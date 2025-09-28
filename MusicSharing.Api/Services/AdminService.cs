@@ -13,6 +13,7 @@ namespace MusicSharing.Api.Services
         public async Task<object> GetDashboardAsync()
         {
             var users = await _context.Users
+                .OrderByDescending(u => u.Id)
                 .Select(u => new UserProfileDto
                 {
                     Id = u.Id,
@@ -24,9 +25,17 @@ namespace MusicSharing.Api.Services
                     EmailConfirmed = u.EmailConfirmed
                 })
                 .ToListAsync();
-            var songs = await _context.Songs.Include(s => s.Categories).Include(s => s.Ratings).Include(s => s.Comments).ToListAsync();
+
+            var songs = await _context.Songs
+                .Include(s => s.Categories)
+                .Include(s => s.Ratings)
+                .Include(s => s.Comments)
+                .OrderByDescending(s => s.Id)
+                .ToListAsync();
+
             var comments = await _context.Comments
                 .Include(c => c.User)
+                .OrderByDescending(c => c.Id)
                 .Select(c => new AdminCommentDto
                 {
                     Id = c.Id,
@@ -39,8 +48,15 @@ namespace MusicSharing.Api.Services
                     Username = c.IsAnonymous ? null : c.User != null ? c.User.Username : null
                 })
                 .ToListAsync();
-            var activities = await _context.Activities.ToListAsync();
-            var blogs = await _context.BlogPosts.ToListAsync();
+
+            var activities = await _context.Activities
+                .OrderByDescending(a => a.Id)
+                .ToListAsync();
+
+            var blogs = await _context.BlogPosts
+                .OrderByDescending(b => b.Id)
+                .ToListAsync();
+
             return new
             {
                 Users = users,
