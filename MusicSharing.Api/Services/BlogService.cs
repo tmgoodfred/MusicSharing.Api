@@ -29,6 +29,19 @@ public class BlogService(AppDbContext context, ActivityService activityService)
         post.PublishDate = DateTime.UtcNow;
         _context.BlogPosts.Add(post);
         await _context.SaveChangesAsync();
+
+        // Log activity for blog post creation
+        if (post.AuthorId.HasValue)
+        {
+            await _activityService.AddAsync(new Activity
+            {
+                UserId = post.AuthorId.Value,
+                Type = "BlogPost",
+                Data = $"{{\"BlogPostId\":{post.Id},\"Title\":\"{post.Title}\"}}",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         return post;
     }
 
