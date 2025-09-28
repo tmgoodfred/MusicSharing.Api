@@ -7,13 +7,9 @@ namespace MusicSharing.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     //[Authorize(Roles = "Admin")]
-    public class AdminController : ControllerBase
+    public class AdminController(AdminService adminService) : ControllerBase
     {
-        private readonly AdminService _adminService;
-        public AdminController(AdminService adminService)
-        {
-            _adminService = adminService;
-        }
+        private readonly AdminService _adminService = adminService;
 
         // GET: api/admin/dashboard
         [HttpGet("dashboard")]

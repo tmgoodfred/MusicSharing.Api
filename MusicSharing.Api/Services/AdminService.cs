@@ -1,24 +1,44 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MusicSharing.Api.Data;
+using MusicSharing.Api.DTOs;
 using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services
 {
-    public class AdminService
+    public class AdminService(AppDbContext context, ActivityService activityService)
     {
-        private readonly AppDbContext _context;
-        private readonly ActivityService _activityService;
-        public AdminService(AppDbContext context, ActivityService activityService)
-        {
-            _context = context;
-            _activityService = activityService;
-        }
+        private readonly AppDbContext _context = context;
+        private readonly ActivityService _activityService = activityService;
 
         public async Task<object> GetDashboardAsync()
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _context.Users
+                .Select(u => new UserProfileDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Role = u.Role.ToString(),
+                    CreatedAt = u.CreatedAt,
+                    ProfilePicturePath = u.ProfilePicturePath,
+                    EmailConfirmed = u.EmailConfirmed
+                })
+                .ToListAsync();
             var songs = await _context.Songs.Include(s => s.Categories).Include(s => s.Ratings).Include(s => s.Comments).ToListAsync();
-            var comments = await _context.Comments.ToListAsync();
+            var comments = await _context.Comments
+                .Include(c => c.User)
+                .Select(c => new AdminCommentDto
+                {
+                    Id = c.Id,
+                    SongId = c.SongId,
+                    BlogPostId = c.BlogPostId,
+                    CommentText = c.CommentText,
+                    IsAnonymous = c.IsAnonymous,
+                    CreatedAt = c.CreatedAt,
+                    UserId = c.UserId,
+                    Username = c.IsAnonymous ? null : c.User != null ? c.User.Username : null
+                })
+                .ToListAsync();
             var activities = await _context.Activities.ToListAsync();
             var blogs = await _context.BlogPosts.ToListAsync();
             return new
