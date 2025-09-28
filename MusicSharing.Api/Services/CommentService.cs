@@ -55,7 +55,7 @@ public class CommentService(AppDbContext context, ActivityService activityServic
 
             await _activityService.AddAsync(new Activity
             {
-                UserId = comment.UserId.Value,
+                UserId = comment.UserId ?? 0,
                 Type = "Comment",
                 Data = data,
                 CreatedAt = DateTime.UtcNow
