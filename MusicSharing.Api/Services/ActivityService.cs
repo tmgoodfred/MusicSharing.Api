@@ -82,5 +82,13 @@ namespace MusicSharing.Api.Services
                 .Where(a => a.Data != null && a.Data.Contains($"\"BlogPostId\":{blogPostId}"))
                 .ExecuteDeleteAsync();
         }
+
+        public async Task<List<Activity>> GetAllAsync(int? count = null)
+        {
+            var query = _context.Activities.OrderByDescending(a => a.CreatedAt);
+            if (count.HasValue)
+                query = query.Take(count.Value);
+            return await query.ToListAsync();
+        }
     }
 }
