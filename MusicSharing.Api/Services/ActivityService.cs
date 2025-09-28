@@ -85,7 +85,7 @@ namespace MusicSharing.Api.Services
 
         public async Task<List<Activity>> GetAllAsync(int? count = null)
         {
-            var query = _context.Activities.OrderByDescending(a => a.CreatedAt);
+            IQueryable<Activity> query = _context.Activities.OrderByDescending(a => a.CreatedAt);
             if (count.HasValue)
                 query = query.Take(count.Value);
             return await query.ToListAsync();
