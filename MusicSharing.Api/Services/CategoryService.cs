@@ -4,9 +4,10 @@ using MusicSharing.Api.Models;
 
 namespace MusicSharing.Api.Services;
 
-public class CategoryService(AppDbContext context)
+public class CategoryService(AppDbContext context, ActivityService activityService)
 {
     private readonly AppDbContext _context = context;
+    private readonly ActivityService _activityService = activityService;
 
     public async Task<List<Category>> GetAllAsync()
     {
@@ -18,11 +19,25 @@ public class CategoryService(AppDbContext context)
         return await _context.Categories.FindAsync(id);
     }
 
-    public async Task<Category> CreateAsync(Category category)
+    public async Task<BlogPost> CreateAsync(BlogPost post)
     {
-        _context.Categories.Add(category);
+        post.PublishDate = DateTime.UtcNow;
+        _context.BlogPosts.Add(post);
         await _context.SaveChangesAsync();
-        return category;
+
+        // Log activity for blog post creation
+        if (post.AuthorId.HasValue)
+        {
+            await _activityService.AddAsync(new Activity
+            {
+                UserId = post.AuthorId.Value,
+                Type = "BlogPost",
+                Data = $"{{\"BlogPostId\":{post.Id},\"Title\":\"{post.Title}\"}}",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        return post;
     }
 
     public async Task<Category?> UpdateAsync(int id, Category updated)
