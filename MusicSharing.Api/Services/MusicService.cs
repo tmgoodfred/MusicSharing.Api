@@ -82,13 +82,19 @@ public class MusicService : IMusicService
         var song = await _context.Songs.FindAsync(id);
         if (song == null) return false;
 
-        // Fetch the user and check if they are admin
         var user = await _context.Users.FindAsync(currentUserId);
         if (user == null) return false;
 
-        // Only allow if the user is the owner or an admin
         if (song.UserId != currentUserId && user.Role.ToString() != "Admin")
             return false;
+
+        // Delete related comments and their activities
+        var comments = await _context.Comments.Where(c => c.SongId == id).ToListAsync();
+        foreach (var comment in comments)
+        {
+            await _activityService.DeleteByCommentAsync(comment.Id);
+            _context.Comments.Remove(comment);
+        }
 
         // Delete related activity entries (e.g., uploads, interactions referencing this song)
         await _activityService.DeleteBySongAsync(id);

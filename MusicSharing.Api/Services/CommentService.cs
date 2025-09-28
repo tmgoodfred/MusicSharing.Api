@@ -73,6 +73,9 @@ public class CommentService(AppDbContext context, ActivityService activityServic
         // Only allow delete if admin or comment owner
         if (!isAdmin && comment.UserId != userId) return false;
 
+        // Remove related activities
+        await _activityService.DeleteByCommentAsync(commentId);
+
         _context.Comments.Remove(comment);
         await _context.SaveChangesAsync();
         return true;

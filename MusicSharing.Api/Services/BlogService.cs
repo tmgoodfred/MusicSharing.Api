@@ -49,6 +49,14 @@ public class BlogService(AppDbContext context, ActivityService activityService)
         var post = await _context.BlogPosts.FindAsync(id);
         if (post == null) return false;
 
+        // Delete related comments and their activities
+        var comments = await _context.Comments.Where(c => c.BlogPostId == id).ToListAsync();
+        foreach (var comment in comments)
+        {
+            await _activityService.DeleteByCommentAsync(comment.Id);
+            _context.Comments.Remove(comment);
+        }
+
         // Delete related activity entries (e.g., post created or commented on)
         await _activityService.DeleteByBlogPostAsync(id);
 
